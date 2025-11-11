@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: media-api
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      APP_NAME: node-playground
+      API_ROOT: /api/v1
+      CORS_ORIGINS: '*'
+      LOG_LEVEL: info
+      AWS_REGION: us-east-1
+      AWS_DYNAMODB_ENDPOINT: http://dynamodb-local:8000
+      CATALOG_TABLE_NAME: media-catalog
+      DEFAULT_TENANT_ID: demo-tenant
+      TENANT_HEADER_NAME: x-tenant-id
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    depends_on:
+      - dynamodb-local
+    restart: unless-stopped
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    user: "0:0"
+    command: ['-jar', 'DynamoDBLocal.jar', '-sharedDb', '-dbPath', '/home/dynamodblocal/data']
+    ports:
+      - '8000:8000'
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+    restart: unless-stopped
+
+volumes:
+  dynamodb-data:
