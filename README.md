@@ -1,6 +1,6 @@
 # Node Playground
 
-This Express-based playground exposes CRUD APIs for media genres and artists backed by DynamoDB. You can run it directly with Node.js or spin up the full stack via Docker Compose.
+This Express + TypeScript playground exposes CRUD APIs for media genres and artists backed by DynamoDB. You can run it directly with Node.js or spin up the full stack via Docker Compose.
 
 ## Requirements
 
@@ -32,8 +32,9 @@ TENANT_HEADER_NAME=x-tenant-id
 
 ## Running
 
-- `npm run dev`: Development mode with `node --watch`.
-- `npm start`: Plain Node process for production-like testing.
+- `npm run dev`: Development mode with `ts-node-dev` (auto reload + fast TS transpile).
+- `npm start`: Builds the TypeScript sources and starts the compiled server.
+- `npm run start:prod`: Runs the already-built output in `dist/` (used by Docker but handy locally).
 
 The HTTP server listens on `http://localhost:3000` by default.
 
@@ -47,6 +48,8 @@ docker compose up --build
 
 This runs the API container on port 3000 and DynamoDB Local on port 8000. Data persists inside the `dynamodb-data` volume.
 
+- `npm run build`: Type-checks & emits compiled JavaScript into `dist/`.
+
 ## DynamoDB setup & seed data
 
 Use the helper scripts to create the single DynamoDB table (default name `media-catalog`) and seed sample data:
@@ -59,6 +62,15 @@ npm run seed:artists    # inserts sample artists
 npm run seed:all
 ```
 
+When you build for production (or run inside Docker), use the `:prod` variants which execute the compiled JavaScript:
+
+```bash
+npm run setup:catalog:prod
+npm run seed:genres:prod
+npm run seed:artists:prod
+npm run seed:all:prod
+```
+
 ## Tests
 
 Run Jest with:
@@ -69,5 +81,6 @@ npm test
 
 ## Useful notes
 
-- Entry point lives in `src/server.js`; the Express app resides in `src/app.js`.
-- Centralized configuration is in `src/config/env.js`, which exposes every environment toggle (including `CATALOG_TABLE_NAME`).
+- TypeScript sources live under `src/`; the main server bootstrap is `src/server.ts`, the Express app resides in `src/app.ts`.
+- Centralized configuration is in `src/config/env.ts`, which exposes every environment toggle (including `CATALOG_TABLE_NAME`).
+- Input validation uses Joi schemas (`src/modules/**/ *.validator.ts`) so errors bubble up as `ApiError` instances.
