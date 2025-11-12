@@ -31,7 +31,7 @@ wait_for_dynamo() {
 wait_for_dynamo
 
 echo "Ensuring catalog table exists..."
-npm run setup:catalog
+npm run setup:catalog:prod
 
 echo "Starting application..."
 exec "$@"
