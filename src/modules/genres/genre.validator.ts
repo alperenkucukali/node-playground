@@ -1,109 +1,105 @@
 import { NextFunction, Request, Response } from 'express';
-import ApiError from '../../utils/api-error';
-import { GenreCreateInput, GenreUpdateInput } from './genre.types';
+import { Joi, validateSchema } from '../../utils/validation';
 
 const ID_PATTERN = /^[a-z0-9_-]+$/;
 
-type MutableGenreCreateInput = GenreCreateInput & Partial<GenreUpdateInput>;
-type MutableGenreUpdateInput = GenreUpdateInput;
+const idSchema = Joi.string()
+  .trim()
+  .min(1)
+  .pattern(ID_PATTERN)
+  .lowercase()
+  .messages({
+    'string.base': 'id is required and must be a non-empty string',
+    'string.empty': 'id is required and must be a non-empty string',
+    'string.pattern.base': 'id may contain lowercase letters, numbers, underscores, or hyphens',
+  });
 
-function assertObject(payload: unknown): asserts payload is Record<string, unknown> {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    throw ApiError.badRequest('Request body must be a JSON object');
-  }
-}
-
-function normalizeId(raw: unknown): string {
-  if (typeof raw !== 'string' || !raw.trim()) {
-    throw ApiError.badRequest('id is required and must be a non-empty string');
-  }
-
-  const normalized = raw.trim().toLowerCase();
-  if (!ID_PATTERN.test(normalized)) {
-    throw ApiError.badRequest('id may contain lowercase letters, numbers, underscores, or hyphens');
-  }
-
-  return normalized;
-}
-
-function normalizeTexts(raw: unknown): Record<string, string> {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    throw ApiError.badRequest('texts must be an object of locale -> text values');
-  }
-
-  const entries = Object.entries(raw).reduce<Record<string, string>>((acc, [locale, text]) => {
-    if (typeof locale !== 'string' || !locale.trim()) {
-      throw ApiError.badRequest('texts keys must be non-empty locale codes');
+const textsSchema = Joi.object()
+  .custom((value, helpers) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return helpers.error('any.custom', { message: 'texts must be an object of locale -> text values' });
     }
-    if (typeof text !== 'string' || !text.trim()) {
-      throw ApiError.badRequest(`texts.${locale} must be a non-empty string`);
+
+    const entries: Record<string, string> = {};
+
+    for (const [locale, text] of Object.entries(value)) {
+      if (typeof locale !== 'string' || !locale.trim()) {
+        return helpers.error('any.custom', { message: 'texts keys must be non-empty locale codes' });
+      }
+
+      if (typeof text !== 'string' || !text.trim()) {
+        return helpers.error('any.custom', { message: `texts.${locale} must be a non-empty string` });
+      }
+
+      entries[locale.trim().toLowerCase()] = text.trim();
     }
-    acc[locale.trim().toLowerCase()] = text.trim();
-    return acc;
-  }, {});
 
-  if (Object.keys(entries).length === 0) {
-    throw ApiError.badRequest('texts must contain at least one locale entry');
-  }
-
-  return entries;
-}
-
-function normalizeDisplayOrder(raw: unknown, { required = true } = {}): number | undefined {
-  if (raw === undefined || raw === null) {
-    if (required) {
-      throw ApiError.badRequest('displayOrder is required');
+    if (Object.keys(entries).length === 0) {
+      return helpers.error('any.custom', { message: 'texts must contain at least one locale entry' });
     }
-    return undefined;
-  }
 
-  const numeric = Number(raw);
-  if (!Number.isInteger(numeric) || numeric < 0) {
-    throw ApiError.badRequest('displayOrder must be a non-negative integer');
-  }
+    return entries;
+  })
+  .messages({
+    'object.base': 'texts must be an object of locale -> text values',
+  });
 
-  return numeric;
-}
+const displayOrderSchema = Joi.number()
+  .integer()
+  .min(0)
+  .messages({
+    'number.base': 'displayOrder must be a non-negative integer',
+    'number.integer': 'displayOrder must be a non-negative integer',
+    'number.min': 'displayOrder must be a non-negative integer',
+  });
 
-function sanitizeGenrePayload(body: unknown): GenreCreateInput;
-function sanitizeGenrePayload(body: unknown, options: { partial: true }): GenreUpdateInput;
-function sanitizeGenrePayload(
-  body: unknown,
-  options: { partial?: boolean } = {},
-): GenreCreateInput | GenreUpdateInput {
-  const { partial = false } = options;
-  assertObject(body);
+const createGenreSchema = Joi.object({
+  id: idSchema.required(),
+  texts: textsSchema.required(),
+  displayOrder: displayOrderSchema.required().messages({ 'any.required': 'displayOrder is required' }),
+});
 
-  if (!partial) {
-    const payload: MutableGenreCreateInput = {
-      id: normalizeId(body.id),
-      texts: normalizeTexts(body.texts),
-      displayOrder: normalizeDisplayOrder(body.displayOrder, { required: true })!,
-    };
-    return payload;
-  }
+const updateGenreSchema = Joi.object({
+  texts: textsSchema,
+  displayOrder: displayOrderSchema,
+  id: Joi.any()
+    .forbidden()
+    .messages({
+      'any.unknown': 'id cannot be updated',
+      'any.forbidden': 'id cannot be updated',
+    }),
+})
+  .custom((value, helpers) => {
+    if (value.texts === undefined && value.displayOrder === undefined) {
+      return helpers.error('any.custom', { message: 'At least one field must be provided to update a genre' });
+    }
+    return value;
+  })
+  .messages({
+    'object.base': 'Request body must be a JSON object',
+  });
 
-  const payload: MutableGenreUpdateInput = {};
+const listQuerySchema = Joi.object({
+  limit: Joi.number()
+    .integer()
+    .min(1)
+    .max(100)
+    .messages({
+      'number.base': 'limit must be an integer between 1 and 100',
+      'number.integer': 'limit must be an integer between 1 and 100',
+      'number.min': 'limit must be an integer between 1 and 100',
+      'number.max': 'limit must be an integer between 1 and 100',
+    }),
+  cursor: Joi.string().trim(),
+}).unknown(true);
 
-  if (body.id !== undefined) {
-    throw ApiError.badRequest('id cannot be updated');
-  }
-
-  if (body.texts !== undefined) {
-    payload.texts = normalizeTexts(body.texts);
-  }
-
-  const displayOrder = normalizeDisplayOrder(body.displayOrder, { required: false });
-  if (displayOrder !== undefined) {
-    payload.displayOrder = displayOrder;
-  }
-
-  return payload;
-}
+const genreIdParamSchema = Joi.object({
+  id: idSchema.required(),
+}).unknown(true);
 
 export function validateCreateGenre(req: Request, _res: Response, next: NextFunction): void {
   try {
-    req.body = sanitizeGenrePayload(req.body);
+    req.body = validateSchema(createGenreSchema, req.body);
     next();
   } catch (error) {
     next(error);
@@ -112,10 +108,7 @@ export function validateCreateGenre(req: Request, _res: Response, next: NextFunc
 
 export function validateUpdateGenre(req: Request, _res: Response, next: NextFunction): void {
   try {
-    req.body = sanitizeGenrePayload(req.body, { partial: true });
-    if (Object.keys(req.body).length === 0) {
-      throw ApiError.badRequest('At least one field must be provided to update a genre');
-    }
+    req.body = validateSchema(updateGenreSchema, req.body, { allowUnknown: true });
     next();
   } catch (error) {
     next(error);
@@ -124,7 +117,8 @@ export function validateUpdateGenre(req: Request, _res: Response, next: NextFunc
 
 export function validateGenreIdParam(req: Request, _res: Response, next: NextFunction): void {
   try {
-    req.params.id = normalizeId(req.params.id);
+    const { id } = validateSchema(genreIdParamSchema, req.params, { allowUnknown: true });
+    req.params.id = id;
     next();
   } catch (error) {
     next(error);
@@ -133,13 +127,9 @@ export function validateGenreIdParam(req: Request, _res: Response, next: NextFun
 
 export function parseListQuery(req: Request, _res: Response, next: NextFunction): void {
   try {
-    const limit = req.query.limit !== undefined ? Number(req.query.limit) : undefined;
-    if (limit !== undefined) {
-      if (!Number.isInteger(limit) || limit <= 0 || limit > 100) {
-        throw ApiError.badRequest('limit must be an integer between 1 and 100');
-      }
-      req.query.limit = limit as any;
-    }
+    const result = validateSchema(listQuerySchema, req.query, { allowUnknown: true });
+    req.query.limit = result.limit as any;
+    req.query.cursor = result.cursor as any;
     next();
   } catch (error) {
     next(error);
