@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
 import { Joi, validateSchema } from '../../utils/validation';
+import { ArtistCreateInput, ArtistUpdateInput } from './artist.types';
 
 const ID_PATTERN = /^[a-z0-9_-]+$/i;
 
@@ -70,6 +70,7 @@ const artistListQuerySchema = Joi.object({
       'number.min': 'limit must be an integer between 1 and 100',
       'number.max': 'limit must be an integer between 1 and 100',
     }),
+  cursor: Joi.string().trim(),
   isActive: Joi.boolean()
     .truthy('true')
     .truthy('TRUE')
@@ -82,41 +83,19 @@ const artistListQuerySchema = Joi.object({
     }),
 }).unknown(true);
 
-export function validateArtistIdParam(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    const { id } = validateSchema(artistIdParamSchema, req.params, { allowUnknown: true });
-    req.params.id = id;
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateArtistId(id: unknown): string {
+  const result = validateSchema(artistIdParamSchema, { id }, { allowUnknown: true });
+  return result.id;
 }
 
-export function validateCreateArtist(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    req.body = validateSchema(createArtistSchema, req.body);
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateCreateArtistPayload(payload: unknown): ArtistCreateInput {
+  return validateSchema(createArtistSchema, payload);
 }
 
-export function validateUpdateArtist(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    req.body = validateSchema(updateArtistSchema, req.body, { allowUnknown: true });
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateUpdateArtistPayload(payload: unknown): ArtistUpdateInput {
+  return validateSchema(updateArtistSchema, payload, { allowUnknown: true });
 }
 
-export function parseArtistListQuery(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    const result = validateSchema(artistListQuerySchema, req.query, { allowUnknown: true });
-    req.query.limit = result.limit as any;
-    req.query.isActive = result.isActive as any;
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateArtistListQuery(query: unknown): { limit?: number; cursor?: string; isActive?: boolean } {
+  return validateSchema(artistListQuerySchema, query, { allowUnknown: true });
 }

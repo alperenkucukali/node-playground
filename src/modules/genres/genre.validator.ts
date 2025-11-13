@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
 import { Joi, validateSchema } from '../../utils/validation';
+import { GenreCreateInput, GenreUpdateInput } from './genre.types';
 
 const ID_PATTERN = /^[a-z0-9_-]+$/;
 
@@ -97,41 +97,19 @@ const genreIdParamSchema = Joi.object({
   id: idSchema.required(),
 }).unknown(true);
 
-export function validateCreateGenre(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    req.body = validateSchema(createGenreSchema, req.body);
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateCreateGenrePayload(payload: unknown): GenreCreateInput {
+  return validateSchema(createGenreSchema, payload);
 }
 
-export function validateUpdateGenre(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    req.body = validateSchema(updateGenreSchema, req.body, { allowUnknown: true });
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateUpdateGenrePayload(payload: unknown): GenreUpdateInput {
+  return validateSchema(updateGenreSchema, payload, { allowUnknown: true });
 }
 
-export function validateGenreIdParam(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    const { id } = validateSchema(genreIdParamSchema, req.params, { allowUnknown: true });
-    req.params.id = id;
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateGenreId(id: unknown): string {
+  const result = validateSchema(genreIdParamSchema, { id }, { allowUnknown: true });
+  return result.id;
 }
 
-export function parseListQuery(req: Request, _res: Response, next: NextFunction): void {
-  try {
-    const result = validateSchema(listQuerySchema, req.query, { allowUnknown: true });
-    req.query.limit = result.limit as any;
-    req.query.cursor = result.cursor as any;
-    next();
-  } catch (error) {
-    next(error);
-  }
+export function validateGenreListQuery(query: unknown): { limit?: number; cursor?: string } {
+  return validateSchema(listQuerySchema, query, { allowUnknown: true });
 }

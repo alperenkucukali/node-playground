@@ -1,11 +1,11 @@
-# Node Playground
+# Node Playground (Lambda Edition)
 
-This Express + TypeScript playground exposes CRUD APIs for media genres and artists backed by DynamoDB. You can run it directly with Node.js or spin up the full stack via Docker Compose.
+This project now exposes AWS Lambda handlers (one per CRUD operation) for managing media genres and artists backed by DynamoDB. There is no Express server or long-running HTTP process—zip the compiled handlers or plug them into API Gateway / Lambda integrations directly.
 
 ## Requirements
 
 - Node.js 20+ and npm
-- Optional: Docker & Docker Compose (to run DynamoDB Local)
+- Optional: Docker (for DynamoDB Local via `docker compose`)
 
 ## Installation
 
@@ -13,10 +13,9 @@ This Express + TypeScript playground exposes CRUD APIs for media genres and arti
 npm install
 ```
 
-Add a `.env` file at the project root if you need to override defaults. These environment variables already have sane fallbacks (change `CATALOG_TABLE_NAME` to the DynamoDB table you prefer):
+Environment variables live in `.env` (all have sensible fallbacks):
 
 ```dotenv
-PORT=3000
 APP_NAME=node-playground
 API_ROOT=/api/v1
 CORS_ORIGINS=*
@@ -30,39 +29,38 @@ DEFAULT_TENANT_ID=demo-tenant
 TENANT_HEADER_NAME=x-tenant-id
 ```
 
-## Running
+## Development workflow
 
-- `npm run dev`: Development mode with `ts-node-dev` (auto reload + fast TS transpile).
-- `npm start`: Builds the TypeScript sources and starts the compiled server.
-- `npm run start:prod`: Runs the already-built output in `dist/` (used by Docker but handy locally).
+- `npm run dev`: TypeScript watch build (emits into `dist/` as you edit).
+- `npm run build`: One-time TypeScript compile (outputs `dist/`).
+- `npm test`: Run the existing Jest unit tests for the service / repository layers.
 
-The HTTP server listens on `http://localhost:3000` by default.
+Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
-### With Docker
+`src/handlers/http.ts` centralizes common Lambda concerns—tenant resolution, JSON parsing, uniform responses, and CORS headers—so individual handlers just focus on validation and service calls.
 
-To boot the API and DynamoDB Local together:
+## Local DynamoDB
+
+If you need DynamoDB Local, spin it up with:
 
 ```bash
-docker compose up --build
+docker compose up dynamodb-local
 ```
 
-This runs the API container on port 3000 and DynamoDB Local on port 8000. Data persists inside the `dynamodb-data` volume.
-
-- `npm run build`: Type-checks & emits compiled JavaScript into `dist/`.
+This only launches the database container (no API container is required now that everything runs on Lambda). Update `AWS_DYNAMODB_ENDPOINT` to `http://localhost:8000` when using it.
 
 ## DynamoDB setup & seed data
 
-Use the helper scripts to create the single DynamoDB table (default name `media-catalog`) and seed sample data:
+Use the helper scripts to create the table and seed demo records:
 
 ```bash
-npm run setup:catalog   # creates the media-catalog table
-npm run seed:genres     # inserts sample genres
-npm run seed:artists    # inserts sample artists
-# or everything at once
-npm run seed:all
+npm run setup:catalog      # create the catalog table
+npm run seed:genres        # seed sample genres
+npm run seed:artists       # seed sample artists
+npm run seed:all           # run both seeders
 ```
 
-When you build for production (or run inside Docker), use the `:prod` variants which execute the compiled JavaScript:
+For production builds (when you only have the compiled `dist/` folder), use the `:prod` variants:
 
 ```bash
 npm run setup:catalog:prod
@@ -71,16 +69,16 @@ npm run seed:artists:prod
 npm run seed:all:prod
 ```
 
-## Tests
+## Packaging for Lambda
 
-Run Jest with:
+1. Run `npm run build`.
+2. Copy the `dist/` folder plus `package.json`, `package-lock.json`, and `node_modules` into an artifact directory.
+3. Point your Lambda to the compiled handler you need, e.g., `dist/src/modules/genres/handlers/list-genres.handler.listGenres`.
 
-```bash
-npm test
-```
+(You can also re-export shortest names via `dist/src/handlers/index.js` if your deployment tooling prefers a single entry module.)
 
 ## Useful notes
 
-- TypeScript sources live under `src/`; the main server bootstrap is `src/server.ts`, the Express app resides in `src/app.ts`.
-- Centralized configuration is in `src/config/env.ts`, which exposes every environment toggle (including `CATALOG_TABLE_NAME`).
-- Input validation uses Joi schemas (`src/modules/**/ *.validator.ts`) so errors bubble up as `ApiError` instances.
+- Configuration still comes from `src/config/env.ts`.
+- Validation stays in `src/modules/**/ *.validator.ts` and now returns plain objects rather than mutating Express requests.
+- Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
