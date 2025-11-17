@@ -10,6 +10,7 @@ import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { documentClient as documentClientInstance } from '../../config/dynamodb';
 import { env } from '../../config/env';
 import { buildArtistSk, buildTenantPk, ENTITY } from '../common/dynamo-keys';
+import { buildUpdateExpression } from '../common/dynamo/update-expression';
 import {
   ArtistCreateInput,
   ArtistEntity,
@@ -123,33 +124,14 @@ export class ArtistRepository {
   }
 
   async updateArtist(tenantId: string, id: string, updates: ArtistUpdateInput): Promise<ArtistEntity> {
-    const expressions: string[] = [];
-    const names: Record<string, string> = { '#updatedAt': 'UpdatedAt' };
-    const values: Record<string, unknown> = { ':updatedAt': new Date().toISOString() };
-
-    expressions.push('#updatedAt = :updatedAt');
-
-    if (updates.firstName !== undefined) {
-      expressions.push('#firstName = :firstName');
-      names['#firstName'] = 'FirstName';
-      values[':firstName'] = updates.firstName;
-    }
-
-    if (updates.lastName !== undefined) {
-      expressions.push('#lastName = :lastName');
-      names['#lastName'] = 'LastName';
-      values[':lastName'] = updates.lastName;
-    }
-
-    if (updates.isActive !== undefined) {
-      expressions.push('#isActive = :isActive');
-      names['#isActive'] = 'IsActive';
-      values[':isActive'] = updates.isActive;
-    }
-
-    if (expressions.length === 1) {
-      throw new Error('No updates provided');
-    }
+    const update = buildUpdateExpression(
+      [
+        { key: 'firstName', attributeName: 'FirstName', value: updates.firstName },
+        { key: 'lastName', attributeName: 'LastName', value: updates.lastName },
+        { key: 'isActive', attributeName: 'IsActive', value: updates.isActive },
+      ],
+      'No updates provided',
+    );
 
     const result = await this.client.send(
       new UpdateCommand({
@@ -158,9 +140,9 @@ export class ArtistRepository {
           PK: buildTenantPk(tenantId),
           SK: buildArtistSk(id),
         },
-        UpdateExpression: `SET ${expressions.join(', ')}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
+        UpdateExpression: update.expression,
+        ExpressionAttributeNames: update.names,
+        ExpressionAttributeValues: update.values,
         ConditionExpression: 'attribute_exists(PK)',
         ReturnValues: 'ALL_NEW',
       }),

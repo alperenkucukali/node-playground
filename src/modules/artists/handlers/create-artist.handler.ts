@@ -1,4 +1,5 @@
 import { createHandler, parseJsonBody } from '../../../handlers/http';
+import { created } from '../../../handlers/response';
 import artistService from '../artist.service';
 import { validateCreateArtistPayload } from '../artist.validator';
 
@@ -7,8 +8,5 @@ export const createArtist = createHandler(async ({ event, tenantId }) => {
   const payload = validateCreateArtistPayload(body);
   const artist = await artistService.createArtist(tenantId, payload);
 
-  return {
-    statusCode: 201,
-    body: { success: true, data: artist },
-  };
+  return created(artist);
 });

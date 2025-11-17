@@ -1,4 +1,5 @@
 import { createHandler } from '../../../handlers/http';
+import { listOk } from '../../../handlers/response';
 import artistService from '../artist.service';
 import { validateArtistListQuery } from '../artist.validator';
 
@@ -11,12 +12,5 @@ export const listArtists = createHandler(async ({ event, tenantId }) => {
     isActive: filters.isActive,
   });
 
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      data: result.items,
-      nextCursor: result.nextCursor,
-    },
-  };
+  return listOk(result.items, result.nextCursor);
 });

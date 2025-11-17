@@ -37,7 +37,7 @@ TENANT_HEADER_NAME=x-tenant-id
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
-`src/handlers/http.ts` centralizes common Lambda concerns—tenant resolution, JSON parsing, uniform responses, and CORS headers—so individual handlers just focus on validation and service calls.
+`src/handlers/http.ts` centralizes tenant resolution plus JSON/CORS handling, while `src/handlers/response.ts` provides reusable helpers (`ok`, `created`, `listOk`, `noContent`) for consistent payload shapes across handlers. Shared utilities under `src/modules/common/**` (e.g., id schema builder and Dynamo update-expression helper) keep cross-cutting logic easy to reuse.
 
 ## Local DynamoDB
 

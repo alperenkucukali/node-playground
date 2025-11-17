@@ -1,17 +1,11 @@
 import { Joi, validateSchema } from '../../utils/validation';
+import { createIdSchema } from '../common/validation/id-schema';
 import { ArtistCreateInput, ArtistUpdateInput } from './artist.types';
 
-const ID_PATTERN = /^[a-z0-9_-]+$/i;
-
-const idSchema = Joi.string()
-  .trim()
-  .min(1)
-  .pattern(ID_PATTERN)
-  .messages({
-    'string.base': 'id is required and must be a non-empty string',
-    'string.empty': 'id is required and must be a non-empty string',
-    'string.pattern.base': 'id may include letters, numbers, underscores, or hyphens',
-  });
+const idSchema = createIdSchema({
+  pattern: /^[a-z0-9_-]+$/i,
+  patternMessage: 'id may include letters, numbers, underscores, or hyphens',
+});
 
 const nameSchema = (field: string, required: boolean) =>
   (required ? Joi.string().required() : Joi.string())

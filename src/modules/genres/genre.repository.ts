@@ -10,6 +10,7 @@ import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { documentClient as documentClientInstance } from '../../config/dynamodb';
 import { env } from '../../config/env';
 import { buildGenreSk, buildTenantPk, ENTITY } from '../common/dynamo-keys';
+import { buildUpdateExpression } from '../common/dynamo/update-expression';
 import {
   GenreCreateInput,
   GenreEntity,
@@ -113,27 +114,13 @@ export class GenreRepository {
   }
 
   async updateGenre(tenantId: string, id: string, updates: GenreUpdateInput): Promise<GenreEntity> {
-    const expressions: string[] = [];
-    const names: Record<string, string> = { '#updatedAt': 'UpdatedAt' };
-    const values: Record<string, unknown> = { ':updatedAt': new Date().toISOString() };
-
-    expressions.push('#updatedAt = :updatedAt');
-
-    if (updates.texts !== undefined) {
-      expressions.push('#texts = :texts');
-      names['#texts'] = 'Texts';
-      values[':texts'] = updates.texts;
-    }
-
-    if (updates.displayOrder !== undefined) {
-      expressions.push('#displayOrder = :displayOrder');
-      names['#displayOrder'] = 'DisplayOrder';
-      values[':displayOrder'] = updates.displayOrder;
-    }
-
-    if (expressions.length === 1) {
-      throw new Error('No updates provided');
-    }
+    const update = buildUpdateExpression(
+      [
+        { key: 'texts', attributeName: 'Texts', value: updates.texts },
+        { key: 'displayOrder', attributeName: 'DisplayOrder', value: updates.displayOrder },
+      ],
+      'No updates provided',
+    );
 
     const result = await this.client.send(
       new UpdateCommand({
@@ -142,9 +129,9 @@ export class GenreRepository {
           PK: buildTenantPk(tenantId),
           SK: buildGenreSk(id),
         },
-        UpdateExpression: `SET ${expressions.join(', ')}`,
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
+        UpdateExpression: update.expression,
+        ExpressionAttributeNames: update.names,
+        ExpressionAttributeValues: update.values,
         ConditionExpression: 'attribute_exists(PK)',
         ReturnValues: 'ALL_NEW',
       }),

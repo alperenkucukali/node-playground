@@ -1,4 +1,5 @@
 import { createHandler } from '../../../handlers/http';
+import { listOk } from '../../../handlers/response';
 import genreService from '../genre.service';
 import { validateGenreListQuery } from '../genre.validator';
 
@@ -10,12 +11,5 @@ export const listGenres = createHandler(async ({ event, tenantId }) => {
     cursor: filters.cursor,
   });
 
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      data: result.items,
-      nextCursor: result.nextCursor,
-    },
-  };
+  return listOk(result.items, result.nextCursor);
 });
