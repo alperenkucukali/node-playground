@@ -33,9 +33,9 @@ METRICS_NAMESPACE=node-playground
 
 ## Development workflow
 
-- `npm run dev`: TypeScript watch build (emits into `dist/` as you edit). Ek profil seçmek için `npm run dev -- --env=production` gibi bir çağrı yapabilirsin (`development`, `local`, `test`, `production`).
-- `npm run build`: One-time TypeScript compile (outputs `dist/`).
-- `npm test`: Run the existing Jest unit tests (aynı şekilde `-- --env=<profil>` parametresi ile farklı env ayarlarını taklit edebilirsin).
+- `npm run dev`: Start the TypeScript watcher (emits into `dist/`). Append `-- --env=<profile>` to choose a configuration profile such as `development`, `local`, `test`, or `production`.
+- `npm run build`: Perform a one-time TypeScript compile, producing `dist/`.
+- `npm test`: Execute the Jest suite (`-- --env=<profile>` is also accepted if you want to mimic a specific environment during tests).
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
@@ -85,4 +85,4 @@ npm run seed:all:prod
 - Validation stays in `src/modules/**/ *.validator.ts` and now returns plain objects rather than mutating Express requests.
 - Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
 - Localized strings live under `src/i18n/*.json` and are loaded via `src/core/translator.ts`. Extend those JSON resources (e.g., add `en`/`tr` entries) when you add new message definitions so responses remain user-friendly.
-- CloudWatch metrics için `ENABLE_METRICS=true` ve `METRICS_NAMESPACE=<ad>` ayarladığında `ApiRequests` ve `ApiLatency` metrikleri otomatik olarak gönderilir (bkz. `src/observability/metrics.ts`).
+- For CloudWatch metrics, set `ENABLE_METRICS=true` and `METRICS_NAMESPACE=<name>` to automatically publish `ApiRequests` and `ApiLatency` metrics (see `src/observability/metrics.ts`).
