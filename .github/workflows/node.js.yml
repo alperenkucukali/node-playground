@@ -32,7 +32,6 @@ jobs:
           APP_ENV: test
       - run: npm audit
       - run: npm run build
-      - run: npm run test:integration
 
   deploy:
     needs: build

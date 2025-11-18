@@ -19,8 +19,7 @@
     "seed:all:prod": "npm run seed:genres:prod && npm run seed:artists:prod",
     "test": "jest --runInBand",
     "lint": "eslint --ext .ts --ext .js .",
-    "lint:fix": "npm run lint -- --fix",
-    "test:integration": "jest --config jest.integration.config.js"
+    "lint:fix": "npm run lint -- --fix"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.933.0",

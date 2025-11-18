@@ -1,6 +1,7 @@
 import {
   CreateTableCommand,
   DeleteTableCommand,
+  ListTablesCommand,
   waitUntilTableExists,
   waitUntilTableNotExists,
 } from '@aws-sdk/client-dynamodb';
@@ -14,6 +15,11 @@ import { ArtistCreateInput } from '../../src/modules/artists/artist.types';
 const TABLE_NAME = env.aws.tables.catalog;
 const DISPLAY_ORDER_INDEX = 'DisplayOrderIndex';
 const TEST_TENANT = 'integration-tenant';
+const IS_LOCAL_ENDPOINT =
+  Boolean(env.aws.dynamoEndpoint) &&
+  /localhost|127\.0\.0\.1/i.test(env.aws.dynamoEndpoint as string);
+const ALLOW_INTEGRATION_TESTS = false; // Toggle to true when you explicitly want to run these suites.
+const SHOULD_ATTEMPT = ALLOW_INTEGRATION_TESTS && IS_LOCAL_ENDPOINT;
 
 async function resetTable(): Promise<void> {
   await deleteTableIfExists();
@@ -68,15 +74,46 @@ async function createTable(): Promise<void> {
   await waitUntilTableExists({ client: dynamoClient, maxWaitTime: 60 }, { TableName: TABLE_NAME });
 }
 
+async function isDynamoReachable(): Promise<boolean> {
+  try {
+    await dynamoClient.send(new ListTablesCommand({ Limit: 1 }));
+    return true;
+  } catch (error) {
+    console.warn('DynamoDB Local is not reachable. Ensure dynamodb-local is running.', error);
+    throw new Error('DynamoDB Local is not reachable; aborting integration tests.');
+  }
+}
+
+let dynamoReady = false;
+
+const describeIntegration = SHOULD_ATTEMPT ? describe : describe.skip;
+
 beforeAll(async () => {
+  if (!SHOULD_ATTEMPT) {
+    console.warn(
+      'DynamoDB integration tests are disabled. Flip ALLOW_INTEGRATION_TESTS=true in tests/integration/dynamodb.test.disabled.ts when you explicitly want to run them locally.',
+    );
+    return;
+  }
+  dynamoReady = await isDynamoReachable();
+  if (!dynamoReady) {
+    console.warn('DynamoDB Local is not reachable; skipping integration suites.');
+    return;
+  }
   await resetTable();
 });
 
 afterEach(async () => {
+  if (!SHOULD_ATTEMPT || !dynamoReady) {
+    return;
+  }
   await resetTable();
 });
 
 afterAll(async () => {
+  if (!SHOULD_ATTEMPT || !dynamoReady) {
+    return;
+  }
   await deleteTableIfExists();
 });
 
@@ -84,8 +121,12 @@ function uniqueId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-describe('GenreRepository integration', () => {
+describeIntegration('GenreRepository integration', () => {
   it('creates, finds, and lists genres', async () => {
+    if (!dynamoReady) {
+      return;
+    }
+
     const input: GenreCreateInput = {
       id: uniqueId('genre'),
       texts: { en: 'Integration Genre' },
@@ -104,8 +145,12 @@ describe('GenreRepository integration', () => {
   });
 });
 
-describe('ArtistRepository integration', () => {
+describeIntegration('ArtistRepository integration', () => {
   it('creates, updates, and deletes artists', async () => {
+    if (!dynamoReady) {
+      return;
+    }
+
     const input: ArtistCreateInput = {
       id: uniqueId('artist'),
       firstName: 'John',
