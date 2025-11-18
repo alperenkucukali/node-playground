@@ -1,4 +1,5 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { randomUUID } from 'node:crypto';
 import { env, LOG_LEVELS } from '../config/env';
 import type { LogLevel } from '../config/env';
 import logger from '../config/logger';
@@ -13,11 +14,13 @@ export interface HandlerContext {
   tenantId: string;
   locale: string;
   requestId?: string;
+  correlationId: string;
 }
 
 type HandlerLogic = (context: HandlerContext) => Promise<ApiSuccessResponse<unknown>>;
 
 const LOCALE_HEADER = 'x-culture';
+const CORRELATION_HEADER = 'x-correlation-id';
 const DEFAULT_LOCALE = 'en-US';
 
 export function createHandler(logic: HandlerLogic) {
@@ -25,11 +28,13 @@ export function createHandler(logic: HandlerLogic) {
     const locale = resolveLocale(event);
     const tenantId = resolveTenantId(event, locale);
     const requestId = event.requestContext?.requestId;
+    const correlationId = resolveCorrelationId(event);
 
-    const response = await logic({ event, tenantId, locale, requestId });
+    const response = await logic({ event, tenantId, locale, requestId, correlationId });
     response.body.requestId = response.body.requestId || requestId;
     response.headers = {
       'Content-Type': 'application/json',
+      [CORRELATION_HEADER]: correlationId,
       ...response.headers,
     };
     return response;
@@ -37,13 +42,15 @@ export function createHandler(logic: HandlerLogic) {
 
   const wrapped = withErrorHandling(handler, {
     onUnexpectedError: (error) =>
-      logger.error('Unexpected error while handling request', { error }),
+      logger.error({ error }, 'Unexpected error while handling request'),
   });
 
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
     const startedAt = Date.now();
     const result = await wrapped(event);
-    logRequest(event, result, startedAt);
+    const correlationId =
+      result.headers?.[CORRELATION_HEADER] || getHeader(event, CORRELATION_HEADER) || randomUUID();
+    logRequest(event, result, startedAt, correlationId);
     return formatResult(event, result);
   };
 }
@@ -84,6 +91,10 @@ function resolveTenantId(event: APIGatewayProxyEventV2, locale: string): string 
 
 function resolveLocale(event: APIGatewayProxyEventV2): string {
   return getHeader(event, LOCALE_HEADER) || DEFAULT_LOCALE;
+}
+
+function resolveCorrelationId(event: APIGatewayProxyEventV2): string {
+  return getHeader(event, CORRELATION_HEADER) || randomUUID();
 }
 
 function getHeader(event: APIGatewayProxyEventV2, name: string): string | undefined {
@@ -140,6 +151,7 @@ function logRequest(
   event: APIGatewayProxyEventV2,
   response: ApiSuccessResponse<unknown> | ApiErrorResponse,
   startedAt: number,
+  correlationId: string,
 ): void {
   const body = response.body as { success?: boolean; code?: number; classId?: string } | undefined;
   const context = {
@@ -148,6 +160,7 @@ function logRequest(
     requestId: event.requestContext?.requestId,
     tenantId: getHeader(event, env.tenant.headerName) || env.tenant.defaultId || 'unknown',
     locale: getHeader(event, LOCALE_HEADER) || DEFAULT_LOCALE,
+    correlationId,
     statusCode: response.statusCode,
     code: body?.code,
     classId: body?.classId,
@@ -167,23 +180,25 @@ function logRequest(
         : 'HTTP request completed';
 
   if (level === 'error') {
-    logger.error(message, context);
+    logger.error(context, message);
     metrics.recordRequestError(
+      context.latencyMs,
       response.statusCode,
       context.method || 'UNKNOWN',
       context.path || 'UNKNOWN',
       context.tenantId,
     );
   } else if (level === 'warn') {
-    logger.warn(message, context);
+    logger.warn(context, message);
     metrics.recordRequestError(
+      context.latencyMs,
       response.statusCode,
       context.method || 'UNKNOWN',
       context.path || 'UNKNOWN',
       context.tenantId,
     );
   } else {
-    logger.info(message, context);
+    logger.info(context, message);
   }
 
   metrics.recordRequestSuccess(

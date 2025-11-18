@@ -36,7 +36,7 @@ export async function publishMetric(options: MetricOptions): Promise<void> {
   try {
     await client.send(new PutMetricDataCommand(params));
   } catch (error) {
-    logger.debug('Failed to publish CloudWatch metric', { error });
+    logger.debug({ error }, 'Failed to publish CloudWatch metric');
   }
 }
 
@@ -61,9 +61,33 @@ export const metrics = {
       unit: 'Count',
       dimensions,
     });
+    void publishMetric({
+      name: 'ApiSuccesses',
+      value: 1,
+      unit: 'Count',
+      dimensions,
+    });
   },
-  recordRequestError(statusCode: number, method: string, path: string, tenantId: string) {
+  recordRequestError(
+    latencyMs: number,
+    statusCode: number,
+    method: string,
+    path: string,
+    tenantId: string,
+  ) {
     const dimensions = buildDimensions(statusCode, method, path, tenantId);
+    void publishMetric({
+      name: 'ApiLatency',
+      value: latencyMs,
+      unit: 'Milliseconds',
+      dimensions,
+    });
+    void publishMetric({
+      name: 'ApiRequests',
+      value: 1,
+      unit: 'Count',
+      dimensions,
+    });
     void publishMetric({
       name: 'ApiErrors',
       value: 1,

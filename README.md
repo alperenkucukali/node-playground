@@ -89,6 +89,7 @@ npm run seed:all:prod
 - For CloudWatch metrics, set `ENABLE_METRICS=true` and `METRICS_NAMESPACE=<name>` to publish `ApiRequests`, `ApiLatency`, and `ApiErrors` metrics (see `src/observability/metrics.ts`).
 - Log levels default per profile (see the environment matrix). Production guidance: keep `LOG_LEVEL=info`, enable metrics, and configure log retention/filters via CloudWatch Logs (e.g., shorter retention for debug environments, longer for prod). Consider enabling log subscription filters or AWS Backup for compliance.
 - Contract tests live under `tests/contract`, ensuring the Lambda response envelope (`ApiSuccessResponse`/`ApiErrorResponse`) stays consistent.
+- Each request may include `x-correlation-id`; if omitted a UUID is generated. Responses echo the header, and all logs/metrics include the correlation ID to simplify tracing across services.
 
 ## Environment matrix
 

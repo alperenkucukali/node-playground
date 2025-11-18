@@ -56,6 +56,6 @@ async function seedArtists(): Promise<void> {
 }
 
 seedArtists().catch((error) => {
-  logger.error('Failed to seed artists', { error });
+  logger.error({ error }, 'Failed to seed artists');
   process.exitCode = 1;
 });

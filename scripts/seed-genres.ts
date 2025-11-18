@@ -56,6 +56,6 @@ async function seedGenres(): Promise<void> {
 }
 
 seedGenres().catch((error) => {
-  logger.error('Failed to seed genres', { error });
+  logger.error({ error }, 'Failed to seed genres');
   process.exitCode = 1;
 });

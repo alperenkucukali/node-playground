@@ -56,6 +56,6 @@ async function ensureTable(): Promise<void> {
 }
 
 ensureTable().catch((error) => {
-  logger.error('Failed to create catalog table', { error });
+  logger.error({ error }, 'Failed to create catalog table');
   process.exitCode = 1;
 });
