@@ -31,6 +31,7 @@ function parseArgs(): SeedArgs {
 async function seedArtists(): Promise<void> {
   const { tenantId: tenantFromArg } = parseArgs();
   const tenantId = (tenantFromArg || env.tenant.defaultId || '').trim();
+  const locale = 'en-US';
 
   if (!tenantId) {
     throw new Error('Tenant id is required. Provide --tenant=<id> or set DEFAULT_TENANT_ID');
@@ -40,7 +41,7 @@ async function seedArtists(): Promise<void> {
 
   for (const artist of SAMPLE_ARTISTS) {
     try {
-      const created = await artistService.createArtist(tenantId, artist);
+      const created = await artistService.createArtist(tenantId, artist, locale);
       logger.info(`Inserted artist ${created.id}`);
     } catch (error) {
       if ((error as { statusCode?: number } | undefined)?.statusCode === 409) {

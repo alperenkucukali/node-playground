@@ -31,6 +31,7 @@ function parseArgs(): SeedArgs {
 async function seedGenres(): Promise<void> {
   const { tenantId: tenantFromArg } = parseArgs();
   const tenantId = (tenantFromArg || env.tenant.defaultId || '').trim();
+  const locale = 'en-US';
 
   if (!tenantId) {
     throw new Error('Tenant id is required. Provide --tenant=<id> or set DEFAULT_TENANT_ID');
@@ -40,7 +41,7 @@ async function seedGenres(): Promise<void> {
 
   for (const genre of SAMPLE_GENRES) {
     try {
-      const created = await genreService.createGenre(tenantId, genre);
+      const created = await genreService.createGenre(tenantId, genre, locale);
       logger.info(`Inserted genre ${created.id}`);
     } catch (error) {
       if ((error as { statusCode?: number } | undefined)?.statusCode === 409) {
