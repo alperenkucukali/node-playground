@@ -6,7 +6,7 @@ import ApiError from '../core/api-error';
 import { ApiErrorResponse, ApiSuccessResponse } from '../core/types';
 import { withErrorHandling } from '../core/with-error-handling';
 import { CommonMessages } from '../modules/common/messages';
-import { publishMetric } from '../observability/metrics';
+import { metrics } from '../observability/metrics';
 
 export interface HandlerContext {
   event: APIGatewayProxyEventV2;
@@ -168,32 +168,31 @@ function logRequest(
 
   if (level === 'error') {
     logger.error(message, context);
+    metrics.recordRequestError(
+      response.statusCode,
+      context.method || 'UNKNOWN',
+      context.path || 'UNKNOWN',
+      context.tenantId,
+    );
   } else if (level === 'warn') {
     logger.warn(message, context);
+    metrics.recordRequestError(
+      response.statusCode,
+      context.method || 'UNKNOWN',
+      context.path || 'UNKNOWN',
+      context.tenantId,
+    );
   } else {
     logger.info(message, context);
   }
 
-  const dimensions = [
-    { Name: 'Method', Value: String(context.method || 'UNKNOWN') },
-    { Name: 'Path', Value: String(context.path || 'UNKNOWN') },
-    { Name: 'StatusCode', Value: String(response.statusCode) },
-    { Name: 'TenantId', Value: String(context.tenantId) },
-  ];
-
-  void publishMetric({
-    name: 'ApiLatency',
-    value: context.latencyMs,
-    unit: 'Milliseconds',
-    dimensions,
-  });
-
-  void publishMetric({
-    name: 'ApiRequests',
-    value: 1,
-    unit: 'Count',
-    dimensions,
-  });
+  metrics.recordRequestSuccess(
+    context.latencyMs,
+    response.statusCode,
+    context.method || 'UNKNOWN',
+    context.path || 'UNKNOWN',
+    context.tenantId,
+  );
 }
 
 function determineLogLevel(statusCode: number, success?: boolean): LogLevel {
