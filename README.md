@@ -88,6 +88,7 @@ npm run seed:all:prod
 - Localized strings live under `src/i18n/*.json` and are loaded via `src/core/translator.ts`. Extend those JSON resources (e.g., add `en`/`tr` entries) when you add new message definitions so responses remain user-friendly.
 - For CloudWatch metrics, set `ENABLE_METRICS=true` and `METRICS_NAMESPACE=<name>` to publish `ApiRequests`, `ApiLatency`, and `ApiErrors` metrics (see `src/observability/metrics.ts`).
 - Log levels default per profile (see the environment matrix). Production guidance: keep `LOG_LEVEL=info`, enable metrics, and configure log retention/filters via CloudWatch Logs (e.g., shorter retention for debug environments, longer for prod). Consider enabling log subscription filters or AWS Backup for compliance.
+- Contract tests live under `tests/contract`, ensuring the Lambda response envelope (`ApiSuccessResponse`/`ApiErrorResponse`) stays consistent.
 
 ## Environment matrix
 
