@@ -87,3 +87,14 @@ npm run seed:all:prod
 - Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
 - Localized strings live under `src/i18n/*.json` and are loaded via `src/core/translator.ts`. Extend those JSON resources (e.g., add `en`/`tr` entries) when you add new message definitions so responses remain user-friendly.
 - For CloudWatch metrics, set `ENABLE_METRICS=true` and `METRICS_NAMESPACE=<name>` to automatically publish `ApiRequests` and `ApiLatency` metrics (see `src/observability/metrics.ts`).
+
+## Environment matrix
+
+| Profile      | `APP_ENV` / `NODE_ENV` | Default log level | Metrics enabled | DynamoDB endpoint            | Notes                                   |
+|--------------|------------------------|-------------------|-----------------|------------------------------|-----------------------------------------|
+| Local        | `local`                | `debug`           | false           | `http://localhost:8000`       | Use with DynamoDB Local; no auth        |
+| Development  | `development`          | `debug`           | optional        | Usually staging DynamoDB URL | Same as local but remote AWS services   |
+| Test         | `test`                 | `error`           | false           | `http://localhost:8000` (CI)  | Used by automated Jest/integration tests |
+| Production   | `production`           | `info`            | true by default | Managed DynamoDB endpoint     | Requires IAM roles, metrics/log policies |
+
+Set `APP_ENV`/`NODE_ENV` (and override individual vars in `.env` or CI secrets) to switch between these profiles.
