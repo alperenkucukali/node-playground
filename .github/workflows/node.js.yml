@@ -28,6 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test -- --env=test
+      - run: npm audit
       - run: npm run build
       - run: npm run test:integration
 
