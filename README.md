@@ -33,9 +33,9 @@ METRICS_NAMESPACE=node-playground
 
 ## Development workflow
 
-- `npm run dev`: Start the TypeScript watcher (emits into `dist/`). Append `-- --env=<profile>` to choose a configuration profile such as `development`, `local`, `test`, or `production`.
+- `npm run dev`: Start the TypeScript watcher (emits into `dist/`). Set `APP_ENV=<profile>` (e.g., `APP_ENV=local npm run dev`) to pick the configuration profile.
 - `npm run build`: Perform a one-time TypeScript compile, producing `dist/`.
-- `npm test`: Execute the Jest suite (`-- --env=<profile>` is also accepted if you want to mimic a specific environment during tests).
+- `npm test`: Execute the Jest suite (also configurable via `APP_ENV=<profile>` before the command).
 - `npm run test:integration`: Run DynamoDB-backed integration tests (requires DynamoDB Local reachable at `AWS_DYNAMODB_ENDPOINT`; the catalog table is recreated for each test).
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
