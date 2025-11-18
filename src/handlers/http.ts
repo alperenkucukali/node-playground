@@ -6,6 +6,7 @@ import ApiError from '../core/api-error';
 import { ApiErrorResponse, ApiSuccessResponse } from '../core/types';
 import { withErrorHandling } from '../core/with-error-handling';
 import { CommonMessages } from '../modules/common/messages';
+import { publishMetric } from '../observability/metrics';
 
 export interface HandlerContext {
   event: APIGatewayProxyEventV2;
@@ -39,8 +40,9 @@ export function createHandler(logic: HandlerLogic) {
   });
 
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+    const startedAt = Date.now();
     const result = await wrapped(event);
-    logRequest(event, result);
+    logRequest(event, result, startedAt);
     return formatResult(event, result);
   };
 }
@@ -131,6 +133,7 @@ function formatResult(
 function logRequest(
   event: APIGatewayProxyEventV2,
   response: ApiSuccessResponse<unknown> | ApiErrorResponse,
+  startedAt: number,
 ): void {
   const body = response.body as { success?: boolean; code?: number; classId?: string } | undefined;
   const context = {
@@ -142,6 +145,7 @@ function logRequest(
     statusCode: response.statusCode,
     code: body?.code,
     classId: body?.classId,
+    latencyMs: Date.now() - startedAt,
   };
 
   const level = determineLogLevel(response.statusCode, body?.success);
@@ -149,13 +153,41 @@ function logRequest(
     return;
   }
 
+  const message =
+    level === 'error'
+      ? 'HTTP request completed with server error'
+      : level === 'warn'
+        ? 'HTTP request completed with client error'
+        : 'HTTP request completed';
+
   if (level === 'error') {
-    logger.error('Request completed with server error', context);
+    logger.error(message, context);
   } else if (level === 'warn') {
-    logger.warn('Request completed with client error', context);
+    logger.warn(message, context);
   } else {
-    logger.info('Request completed', context);
+    logger.info(message, context);
   }
+
+  const dimensions = [
+    { Name: 'Method', Value: String(context.method || 'UNKNOWN') },
+    { Name: 'Path', Value: String(context.path || 'UNKNOWN') },
+    { Name: 'StatusCode', Value: String(response.statusCode) },
+    { Name: 'TenantId', Value: String(context.tenantId) },
+  ];
+
+  void publishMetric({
+    name: 'ApiLatency',
+    value: context.latencyMs,
+    unit: 'Milliseconds',
+    dimensions,
+  });
+
+  void publishMetric({
+    name: 'ApiRequests',
+    value: 1,
+    unit: 'Count',
+    dimensions,
+  });
 }
 
 function determineLogLevel(statusCode: number, success?: boolean): LogLevel {

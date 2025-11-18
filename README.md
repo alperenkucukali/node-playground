@@ -27,13 +27,15 @@ AWS_ACCESS_KEY_ID=local
 AWS_SECRET_ACCESS_KEY=local
 DEFAULT_TENANT_ID=demo-tenant
 TENANT_HEADER_NAME=x-tenant-id
+ENABLE_METRICS=false
+METRICS_NAMESPACE=node-playground
 ```
 
 ## Development workflow
 
-- `npm run dev`: TypeScript watch build (emits into `dist/` as you edit).
+- `npm run dev`: TypeScript watch build (emits into `dist/` as you edit). Ek profil seçmek için `npm run dev -- --env=production` gibi bir çağrı yapabilirsin (`development`, `local`, `test`, `production`).
 - `npm run build`: One-time TypeScript compile (outputs `dist/`).
-- `npm test`: Run the existing Jest unit tests for the service / repository layers.
+- `npm test`: Run the existing Jest unit tests (aynı şekilde `-- --env=<profil>` parametresi ile farklı env ayarlarını taklit edebilirsin).
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
@@ -83,3 +85,4 @@ npm run seed:all:prod
 - Validation stays in `src/modules/**/ *.validator.ts` and now returns plain objects rather than mutating Express requests.
 - Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
 - Localized strings live under `src/i18n/*.json` and are loaded via `src/core/translator.ts`. Extend those JSON resources (e.g., add `en`/`tr` entries) when you add new message definitions so responses remain user-friendly.
+- CloudWatch metrics için `ENABLE_METRICS=true` ve `METRICS_NAMESPACE=<ad>` ayarladığında `ApiRequests` ve `ApiLatency` metrikleri otomatik olarak gönderilir (bkz. `src/observability/metrics.ts`).

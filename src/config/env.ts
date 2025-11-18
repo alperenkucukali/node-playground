@@ -19,6 +19,8 @@ const FALLBACKS: {
   AWS_SECRET_ACCESS_KEY: string;
   DEFAULT_TENANT_ID: string;
   TENANT_HEADER_NAME: string;
+  METRICS_NAMESPACE: string;
+  ENABLE_METRICS: string;
 } = {
   NODE_ENV: 'development',
   PORT: '3000',
@@ -33,6 +35,8 @@ const FALLBACKS: {
   AWS_SECRET_ACCESS_KEY: 'local',
   DEFAULT_TENANT_ID: 'demo-tenant',
   TENANT_HEADER_NAME: 'x-tenant-id',
+  METRICS_NAMESPACE: 'node-playground',
+  ENABLE_METRICS: 'false',
 } as const;
 
 const ENV_PROFILES: Record<string, Partial<typeof FALLBACKS>> = {
@@ -84,9 +88,13 @@ export interface EnvConfig {
   appName: string;
   apiRoot: string;
   corsOrigins: string[];
-  logLevel: string;
+  logLevel: LogLevel;
   aws: AwsConfig;
   tenant: TenantConfig;
+  observability: {
+    metricsEnabled: boolean;
+    metricsNamespace: string;
+  };
   isProduction: boolean;
   isTest: boolean;
   isDevelopment: boolean;
@@ -96,13 +104,35 @@ const rawProfile = (process.env.APP_ENV || process.env.NODE_ENV || FALLBACKS.NOD
 const profileFallbacks = { ...FALLBACKS, ...(ENV_PROFILES[rawProfile] || {}) };
 const normalizedProfile = ENV_PROFILES[rawProfile] ? rawProfile : FALLBACKS.NODE_ENV;
 
+function resolveLogLevel(value: string | undefined, fallback: LogLevel): LogLevel {
+  if (!value) {
+    return fallback;
+  }
+  const normalized = value.toLowerCase() as LogLevel;
+  return LOG_LEVELS.includes(normalized) ? normalized : fallback;
+}
+
+function resolveBoolean(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+  const normalized = value.toLowerCase();
+  if (['true', '1', 'yes'].includes(normalized)) {
+    return true;
+  }
+  if (['false', '0', 'no'].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
 export const env: EnvConfig = {
   nodeEnv: normalizedProfile,
   port: Number(process.env.PORT || profileFallbacks.PORT),
   appName: process.env.APP_NAME || profileFallbacks.APP_NAME,
   apiRoot: process.env.API_ROOT || profileFallbacks.API_ROOT,
   corsOrigins: toArray(process.env.CORS_ORIGINS || profileFallbacks.CORS_ORIGINS),
-  logLevel: process.env.LOG_LEVEL || profileFallbacks.LOG_LEVEL,
+  logLevel: resolveLogLevel(process.env.LOG_LEVEL, profileFallbacks.LOG_LEVEL),
   aws: {
     region: process.env.AWS_REGION || profileFallbacks.AWS_REGION,
     dynamoEndpoint: process.env.AWS_DYNAMODB_ENDPOINT || profileFallbacks.AWS_DYNAMODB_ENDPOINT,
@@ -117,6 +147,10 @@ export const env: EnvConfig = {
   tenant: {
     defaultId: process.env.DEFAULT_TENANT_ID || profileFallbacks.DEFAULT_TENANT_ID,
     headerName: process.env.TENANT_HEADER_NAME || profileFallbacks.TENANT_HEADER_NAME,
+  },
+  observability: {
+    metricsEnabled: resolveBoolean(process.env.ENABLE_METRICS, profileFallbacks.ENABLE_METRICS === 'true'),
+    metricsNamespace: process.env.METRICS_NAMESPACE || profileFallbacks.METRICS_NAMESPACE,
   },
   isProduction: false,
   isTest: false,

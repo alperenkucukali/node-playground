@@ -1,36 +1,41 @@
-import util from 'node:util';
-import { env } from './env';
+import { env, LogLevel, LOG_LEVELS } from './env';
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  [key: string]: unknown;
+}
 
 class Logger {
-  private static readonly LEVELS: LogLevel[] = ['error', 'warn', 'info', 'debug'];
   private readonly currentLevelIndex: number;
 
   constructor(private readonly level: LogLevel = 'info') {
-    this.currentLevelIndex = Math.max(Logger.LEVELS.indexOf(level), 0);
-  }
-
-  private format(level: LogLevel, message: string, meta?: unknown): string {
-    const timestamp = new Date().toISOString();
-    const base = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-
-    if (meta === undefined) {
-      return base;
-    }
-
-    const serialized =
-      typeof meta === 'string' ? meta : util.inspect(meta, { depth: 5, colors: false });
-    return `${base} ${serialized}`;
+    this.currentLevelIndex = Math.max(LOG_LEVELS.indexOf(level), 0);
   }
 
   private log(level: LogLevel, message: string, meta?: unknown): void {
-    if (Logger.LEVELS.indexOf(level) > this.currentLevelIndex) {
+    if (LOG_LEVELS.indexOf(level) > this.currentLevelIndex) {
       return;
     }
 
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+    };
+
+    if (meta !== undefined) {
+      if (meta && typeof meta === 'object') {
+        Object.assign(entry, meta);
+      } else {
+        entry.details = meta;
+      }
+    }
+
+    const serialized = JSON.stringify(entry);
     const writer = level === 'error' ? console.error : console.log;
-    writer(this.format(level, message, meta));
+    writer(serialized);
   }
 
   error(message: string, meta?: unknown): void {
@@ -50,7 +55,7 @@ class Logger {
   }
 }
 
-const logger = new Logger(env.logLevel as LogLevel);
+const logger = new Logger(env.logLevel);
 
 export { logger };
 export default logger;
