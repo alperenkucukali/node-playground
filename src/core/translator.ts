@@ -11,16 +11,20 @@ const options: InitOptions = {
   interpolation: {
     escapeValue: false,
   },
+  initImmediate: false,
 };
 
-void i18next.init(options).catch((error) => {
+const instance = i18next.createInstance();
+try {
+  instance.init(options);
+} catch (error) {
   console.error('Failed to initialize translations', error);
-});
+}
 
 class Translator {
   translate(key: string, locale: string): string {
     const language = this.resolveLanguage(locale);
-    return i18next.t(key, { lng: language, defaultValue: key });
+    return instance.t(key, { lng: language, defaultValue: key });
   }
 
   private resolveLanguage(locale?: string): string {
