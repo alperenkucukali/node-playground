@@ -61,8 +61,9 @@ export class GenreRepository {
     const result = await this.client.send(new QueryCommand(query));
 
     const items =
-      result.Items?.map((item) => this.fromDbModel(item)).filter((item): item is GenreEntity => !!item) ||
-      [];
+      result.Items?.map((item) => this.fromDbModel(item)).filter(
+        (item): item is GenreEntity => !!item,
+      ) || [];
 
     return {
       items,

@@ -65,10 +65,7 @@ async function createTable(): Promise<void> {
     }),
   );
 
-  await waitUntilTableExists(
-    { client: dynamoClient, maxWaitTime: 60 },
-    { TableName: TABLE_NAME },
-  );
+  await waitUntilTableExists({ client: dynamoClient, maxWaitTime: 60 }, { TableName: TABLE_NAME });
 }
 
 beforeAll(async () => {
@@ -117,9 +114,16 @@ describe('ArtistRepository integration', () => {
     };
 
     const created = await artistRepository.createArtist(TEST_TENANT, input);
-    expect(created).toMatchObject({ id: input.id, firstName: 'John', lastName: 'Doe', isActive: true });
+    expect(created).toMatchObject({
+      id: input.id,
+      firstName: 'John',
+      lastName: 'Doe',
+      isActive: true,
+    });
 
-    const updated = await artistRepository.updateArtist(TEST_TENANT, input.id, { firstName: 'Jane' });
+    const updated = await artistRepository.updateArtist(TEST_TENANT, input.id, {
+      firstName: 'Jane',
+    });
     expect(updated).toMatchObject({ id: input.id, firstName: 'Jane' });
 
     await artistRepository.deleteArtist(TEST_TENANT, input.id);

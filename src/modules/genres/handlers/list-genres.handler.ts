@@ -6,11 +6,14 @@ import { validateGenreListQuery } from '../genre.validator';
 
 export const listGenres = createHandler(async ({ event, tenantId, locale, requestId }) => {
   const filters = validateGenreListQuery(event.queryStringParameters || {}, locale);
-  const result = await genreService.listGenres({
-    tenantId,
-    limit: filters.limit,
-    cursor: filters.cursor,
-  }, locale);
+  const result = await genreService.listGenres(
+    {
+      tenantId,
+      limit: filters.limit,
+      cursor: filters.cursor,
+    },
+    locale,
+  );
 
   return ok(
     GenreMessages.LIST_SUCCESS,

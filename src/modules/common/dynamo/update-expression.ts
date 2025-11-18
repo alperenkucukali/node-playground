@@ -10,7 +10,10 @@ interface UpdateExpressionResult {
   values: Record<string, unknown>;
 }
 
-export function buildUpdateExpression(fields: UpdateField[], errorMessage = 'No updates provided'): UpdateExpressionResult {
+export function buildUpdateExpression(
+  fields: UpdateField[],
+  errorMessage = 'No updates provided',
+): UpdateExpressionResult {
   const expressions: string[] = [];
   const names: Record<string, string> = { '#updatedAt': 'UpdatedAt' };
   const values: Record<string, unknown> = { ':updatedAt': new Date().toISOString() };

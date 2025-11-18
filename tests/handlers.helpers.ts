@@ -30,7 +30,9 @@ export const baseEvent: APIGatewayProxyEventV2 = {
   isBase64Encoded: false,
 };
 
-export function buildEvent(overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 {
+export function buildEvent(
+  overrides: Partial<APIGatewayProxyEventV2> = {},
+): APIGatewayProxyEventV2 {
   return {
     ...baseEvent,
     ...overrides,

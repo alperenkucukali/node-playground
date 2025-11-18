@@ -17,7 +17,10 @@ export class GenreService {
   constructor(private readonly repository: GenreRepository) {}
 
   async listGenres(params: GenreListQuery, locale: string): Promise<GenreListResponse> {
-    const decodedCursor = this.cursorCodec.decode(params.cursor, () => new ApiError(CommonMessages.INVALID_CURSOR, locale));
+    const decodedCursor = this.cursorCodec.decode(
+      params.cursor,
+      () => new ApiError(CommonMessages.INVALID_CURSOR, locale),
+    );
     const result = await this.repository.listGenres({
       tenantId: params.tenantId,
       limit: params.limit,
@@ -38,7 +41,11 @@ export class GenreService {
     return genre;
   }
 
-  async createGenre(tenantId: string, payload: GenreCreateInput, locale: string): Promise<GenreEntity> {
+  async createGenre(
+    tenantId: string,
+    payload: GenreCreateInput,
+    locale: string,
+  ): Promise<GenreEntity> {
     try {
       return await this.repository.createGenre(tenantId, payload);
     } catch (error: any) {
@@ -49,7 +56,12 @@ export class GenreService {
     }
   }
 
-  async updateGenre(tenantId: string, id: string, payload: GenreUpdateInput, locale: string): Promise<GenreEntity> {
+  async updateGenre(
+    tenantId: string,
+    id: string,
+    payload: GenreUpdateInput,
+    locale: string,
+  ): Promise<GenreEntity> {
     try {
       return await this.repository.updateGenre(tenantId, id, payload);
     } catch (error: any) {

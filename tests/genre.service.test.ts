@@ -47,7 +47,10 @@ describe('GenreService', () => {
         lastEvaluatedKey: nextCursorObject,
       });
 
-      const result = await service.listGenres({ tenantId, limit: 5, cursor: encodedCursor }, locale);
+      const result = await service.listGenres(
+        { tenantId, limit: 5, cursor: encodedCursor },
+        locale,
+      );
 
       expect(repository.listGenres).toHaveBeenCalledWith({
         tenantId,
@@ -58,7 +61,9 @@ describe('GenreService', () => {
     });
 
     it('throws ApiError.badRequest when cursor token is invalid', async () => {
-      await expect(service.listGenres({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(ApiError);
+      await expect(service.listGenres({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(
+        ApiError,
+      );
       await expect(service.listGenres({ tenantId, cursor: '***' }, locale)).rejects.toMatchObject({
         statusCode: 400,
       });
@@ -112,7 +117,13 @@ describe('GenreService', () => {
     it('throws conflict when id already exists', async () => {
       repository.createGenre.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.createGenre(tenantId, { id: 'drama', displayOrder: 1, texts: { en: 'Drama' } }, locale)).rejects.toMatchObject({
+      await expect(
+        service.createGenre(
+          tenantId,
+          { id: 'drama', displayOrder: 1, texts: { en: 'Drama' } },
+          locale,
+        ),
+      ).rejects.toMatchObject({
         statusCode: 409,
       });
     });

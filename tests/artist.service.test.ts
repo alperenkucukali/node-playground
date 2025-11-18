@@ -48,7 +48,10 @@ describe('ArtistService', () => {
         lastEvaluatedKey: nextCursorObject,
       });
 
-      const result = await service.listArtists({ tenantId, limit: 5, cursor: encodedCursor, isActive: true }, locale);
+      const result = await service.listArtists(
+        { tenantId, limit: 5, cursor: encodedCursor, isActive: true },
+        locale,
+      );
 
       expect(repository.listArtists).toHaveBeenCalledWith({
         tenantId,
@@ -60,7 +63,9 @@ describe('ArtistService', () => {
     });
 
     it('throws ApiError.badRequest when cursor token is invalid', async () => {
-      await expect(service.listArtists({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(ApiError);
+      await expect(service.listArtists({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(
+        ApiError,
+      );
       await expect(service.listArtists({ tenantId, cursor: '***' }, locale)).rejects.toMatchObject({
         statusCode: 400,
       });
@@ -116,7 +121,11 @@ describe('ArtistService', () => {
       repository.createArtist.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
       await expect(
-        service.createArtist(tenantId, { id: 'artist-1', firstName: 'Al', lastName: 'Pacino', isActive: true }, locale),
+        service.createArtist(
+          tenantId,
+          { id: 'artist-1', firstName: 'Al', lastName: 'Pacino', isActive: true },
+          locale,
+        ),
       ).rejects.toMatchObject({
         statusCode: 409,
       });
@@ -138,7 +147,9 @@ describe('ArtistService', () => {
 
       const result = await service.updateArtist(tenantId, 'artist-1', { firstName: 'New' }, locale);
 
-      expect(repository.updateArtist).toHaveBeenCalledWith(tenantId, 'artist-1', { firstName: 'New' });
+      expect(repository.updateArtist).toHaveBeenCalledWith(tenantId, 'artist-1', {
+        firstName: 'New',
+      });
       expect(result).toBe(updated);
     });
 

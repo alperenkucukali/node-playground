@@ -1,4 +1,10 @@
-import { createArtist, deleteArtist, getArtist, listArtists, updateArtist } from '../src/modules/artists/handlers';
+import {
+  createArtist,
+  deleteArtist,
+  getArtist,
+  listArtists,
+  updateArtist,
+} from '../src/modules/artists/handlers';
 import artistService from '../src/modules/artists/artist.service';
 import ApiError from '../src/core/api-error';
 import { ArtistMessages } from '../src/modules/artists/artist.messages';
@@ -62,7 +68,9 @@ describe('Artist handlers', () => {
   });
 
   it('listArtists surfaces service errors', async () => {
-    mockedArtistService.listArtists.mockRejectedValue(new ApiError(CommonMessages.INVALID_CURSOR, 'en-US'));
+    mockedArtistService.listArtists.mockRejectedValue(
+      new ApiError(CommonMessages.INVALID_CURSOR, 'en-US'),
+    );
 
     const response = await listArtists(buildEvent());
     expect(typeof response).toBe('object');

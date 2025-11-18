@@ -36,7 +36,8 @@ export function createHandler(logic: HandlerLogic) {
   };
 
   const wrapped = withErrorHandling(handler, {
-    onUnexpectedError: (error) => logger.error('Unexpected error while handling request', { error }),
+    onUnexpectedError: (error) =>
+      logger.error('Unexpected error while handling request', { error }),
   });
 
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
@@ -47,12 +48,17 @@ export function createHandler(logic: HandlerLogic) {
   };
 }
 
-export function parseJsonBody<T = unknown>(event: APIGatewayProxyEventV2, locale: string): T | undefined {
+export function parseJsonBody<T = unknown>(
+  event: APIGatewayProxyEventV2,
+  locale: string,
+): T | undefined {
   if (!event.body) {
     return undefined;
   }
 
-  const payload = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
+  const payload = event.isBase64Encoded
+    ? Buffer.from(event.body, 'base64').toString('utf8')
+    : event.body;
 
   try {
     return payload ? (JSON.parse(payload) as T) : undefined;

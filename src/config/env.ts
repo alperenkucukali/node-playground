@@ -100,7 +100,11 @@ export interface EnvConfig {
   isDevelopment: boolean;
 }
 
-const rawProfile = (process.env.APP_ENV || process.env.NODE_ENV || FALLBACKS.NODE_ENV).toLowerCase();
+const rawProfile = (
+  process.env.APP_ENV ||
+  process.env.NODE_ENV ||
+  FALLBACKS.NODE_ENV
+).toLowerCase();
 const profileFallbacks = { ...FALLBACKS, ...(ENV_PROFILES[rawProfile] || {}) };
 const normalizedProfile = ENV_PROFILES[rawProfile] ? rawProfile : FALLBACKS.NODE_ENV;
 
@@ -149,7 +153,10 @@ export const env: EnvConfig = {
     headerName: process.env.TENANT_HEADER_NAME || profileFallbacks.TENANT_HEADER_NAME,
   },
   observability: {
-    metricsEnabled: resolveBoolean(process.env.ENABLE_METRICS, profileFallbacks.ENABLE_METRICS === 'true'),
+    metricsEnabled: resolveBoolean(
+      process.env.ENABLE_METRICS,
+      profileFallbacks.ENABLE_METRICS === 'true',
+    ),
     metricsNamespace: process.env.METRICS_NAMESPACE || profileFallbacks.METRICS_NAMESPACE,
   },
   isProduction: false,

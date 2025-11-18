@@ -17,7 +17,10 @@ export class ArtistService {
   constructor(private readonly repository: ArtistRepository) {}
 
   async listArtists(params: ArtistListQuery, locale: string): Promise<ArtistListResponse> {
-    const decodedCursor = this.cursorCodec.decode(params.cursor, () => new ApiError(CommonMessages.INVALID_CURSOR, locale));
+    const decodedCursor = this.cursorCodec.decode(
+      params.cursor,
+      () => new ApiError(CommonMessages.INVALID_CURSOR, locale),
+    );
     const result = await this.repository.listArtists({
       tenantId: params.tenantId,
       limit: params.limit,
@@ -39,7 +42,11 @@ export class ArtistService {
     return artist;
   }
 
-  async createArtist(tenantId: string, payload: ArtistCreateInput, locale: string): Promise<ArtistEntity> {
+  async createArtist(
+    tenantId: string,
+    payload: ArtistCreateInput,
+    locale: string,
+  ): Promise<ArtistEntity> {
     try {
       return await this.repository.createArtist(tenantId, payload);
     } catch (error: any) {
@@ -50,7 +57,12 @@ export class ArtistService {
     }
   }
 
-  async updateArtist(tenantId: string, id: string, payload: ArtistUpdateInput, locale: string): Promise<ArtistEntity> {
+  async updateArtist(
+    tenantId: string,
+    id: string,
+    payload: ArtistUpdateInput,
+    locale: string,
+  ): Promise<ArtistEntity> {
     try {
       return await this.repository.updateArtist(tenantId, id, payload);
     } catch (error: any) {

@@ -32,16 +32,20 @@ const updateArtistSchema = Joi.object({
   firstName: nameSchema('firstName', false),
   lastName: nameSchema('lastName', false),
   isActive: isActiveSchema,
-  id: Joi.any()
-    .forbidden()
-    .messages({
-      'any.unknown': 'id cannot be updated',
-      'any.forbidden': 'id cannot be updated',
-    }),
+  id: Joi.any().forbidden().messages({
+    'any.unknown': 'id cannot be updated',
+    'any.forbidden': 'id cannot be updated',
+  }),
 })
   .custom((value, helpers) => {
-    if (value.firstName === undefined && value.lastName === undefined && value.isActive === undefined) {
-      return helpers.error('any.custom', { message: 'At least one field must be provided to update an artist' });
+    if (
+      value.firstName === undefined &&
+      value.lastName === undefined &&
+      value.isActive === undefined
+    ) {
+      return helpers.error('any.custom', {
+        message: 'At least one field must be provided to update an artist',
+      });
     }
     return value;
   })
@@ -54,16 +58,12 @@ const artistIdParamSchema = Joi.object({
 }).unknown(true);
 
 const artistListQuerySchema = Joi.object({
-  limit: Joi.number()
-    .integer()
-    .min(1)
-    .max(100)
-    .messages({
-      'number.base': 'limit must be an integer between 1 and 100',
-      'number.integer': 'limit must be an integer between 1 and 100',
-      'number.min': 'limit must be an integer between 1 and 100',
-      'number.max': 'limit must be an integer between 1 and 100',
-    }),
+  limit: Joi.number().integer().min(1).max(100).messages({
+    'number.base': 'limit must be an integer between 1 and 100',
+    'number.integer': 'limit must be an integer between 1 and 100',
+    'number.min': 'limit must be an integer between 1 and 100',
+    'number.max': 'limit must be an integer between 1 and 100',
+  }),
   cursor: Joi.string().trim(),
   isActive: Joi.boolean()
     .truthy('true')

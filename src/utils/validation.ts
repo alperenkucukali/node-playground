@@ -19,7 +19,9 @@ export function validateSchema<T>(
   if (error) {
     const detail = error.details[0];
     const message =
-      (detail?.context as { message?: string } | undefined)?.message || detail?.message || 'Validation failed';
+      (detail?.context as { message?: string } | undefined)?.message ||
+      detail?.message ||
+      'Validation failed';
     throw new ApiError(CommonMessages.INVALID_INPUT, locale, { message });
   }
 

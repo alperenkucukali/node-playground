@@ -9,15 +9,11 @@ export interface IdSchemaOptions {
 export function createIdSchema(options: IdSchemaOptions) {
   const { pattern, lowercase, patternMessage } = options;
 
-  let schema = Joi.string()
-    .trim()
-    .min(1)
-    .pattern(pattern)
-    .messages({
-      'string.base': 'id is required and must be a non-empty string',
-      'string.empty': 'id is required and must be a non-empty string',
-      'string.pattern.base': patternMessage,
-    });
+  let schema = Joi.string().trim().min(1).pattern(pattern).messages({
+    'string.base': 'id is required and must be a non-empty string',
+    'string.empty': 'id is required and must be a non-empty string',
+    'string.pattern.base': patternMessage,
+  });
 
   if (lowercase) {
     schema = schema.lowercase();

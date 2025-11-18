@@ -1,5 +1,10 @@
-import { APIGatewayProxyEventV2 } from 'aws-lambda';
-import { listGenres, getGenre, createGenre, updateGenre, deleteGenre } from '../src/modules/genres/handlers';
+import {
+  listGenres,
+  getGenre,
+  createGenre,
+  updateGenre,
+  deleteGenre,
+} from '../src/modules/genres/handlers';
 import genreService from '../src/modules/genres/genre.service';
 import ApiError from '../src/core/api-error';
 import { CommonMessages } from '../src/modules/common/messages';
@@ -67,7 +72,9 @@ describe('Genre handlers', () => {
   });
 
   it('listGenres surfaces ApiError from service layer', async () => {
-    mockedGenreService.listGenres.mockRejectedValue(new ApiError(CommonMessages.INVALID_CURSOR, 'en-US'));
+    mockedGenreService.listGenres.mockRejectedValue(
+      new ApiError(CommonMessages.INVALID_CURSOR, 'en-US'),
+    );
 
     const response = await listGenres(buildEvent());
 

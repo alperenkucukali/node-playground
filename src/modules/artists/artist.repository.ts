@@ -71,7 +71,9 @@ export class ArtistRepository {
     const result = await this.client.send(new QueryCommand(query));
 
     const items =
-      result.Items?.map((item) => this.fromDbModel(item)).filter((item): item is ArtistEntity => !!item) || [];
+      result.Items?.map((item) => this.fromDbModel(item)).filter(
+        (item): item is ArtistEntity => !!item,
+      ) || [];
 
     return {
       items,
@@ -123,7 +125,11 @@ export class ArtistRepository {
     return model;
   }
 
-  async updateArtist(tenantId: string, id: string, updates: ArtistUpdateInput): Promise<ArtistEntity> {
+  async updateArtist(
+    tenantId: string,
+    id: string,
+    updates: ArtistUpdateInput,
+  ): Promise<ArtistEntity> {
     const update = buildUpdateExpression(
       [
         { key: 'firstName', attributeName: 'FirstName', value: updates.firstName },
