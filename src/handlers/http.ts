@@ -1,34 +1,49 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { env } from '../config/env';
 import logger from '../config/logger';
-import ApiError from '../utils/api-error';
+import ApiError from '../core/api-error';
+import { ApiErrorResponse, ApiSuccessResponse } from '../core/types';
+import { withErrorHandling } from '../core/with-error-handling';
+import { CommonMessages } from '../modules/common/messages';
 
 export interface HandlerContext {
   event: APIGatewayProxyEventV2;
   tenantId: string;
+  locale: string;
+  requestId?: string;
 }
 
-export interface HandlerResponse {
-  statusCode: number;
-  body?: unknown;
-  headers?: Record<string, string>;
-}
+type HandlerLogic = (context: HandlerContext) => Promise<ApiSuccessResponse<unknown>>;
 
-type HandlerLogic = (context: HandlerContext) => Promise<HandlerResponse>;
+const LOCALE_HEADER = 'x-culture';
+const DEFAULT_LOCALE = 'en-US';
 
 export function createHandler(logic: HandlerLogic) {
+  const handler = async (event: APIGatewayProxyEventV2): Promise<ApiSuccessResponse<unknown>> => {
+    const locale = resolveLocale(event);
+    const tenantId = resolveTenantId(event, locale);
+    const requestId = event.requestContext?.requestId;
+
+    const response = await logic({ event, tenantId, locale, requestId });
+    response.body.requestId = response.body.requestId || requestId;
+    response.headers = {
+      'Content-Type': 'application/json',
+      ...response.headers,
+    };
+    return response;
+  };
+
+  const wrapped = withErrorHandling(handler, {
+    onUnexpectedError: (error) => logger.error('Unexpected error while handling request', { error }),
+  });
+
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
-    try {
-      const tenantId = resolveTenantId(event);
-      const response = await logic({ event, tenantId });
-      return formatSuccess(event, response);
-    } catch (error) {
-      return formatError(event, error);
-    }
+    const result = await wrapped(event);
+    return formatResult(event, result);
   };
 }
 
-export function parseJsonBody<T = unknown>(event: APIGatewayProxyEventV2): T | undefined {
+export function parseJsonBody<T = unknown>(event: APIGatewayProxyEventV2, locale: string): T | undefined {
   if (!event.body) {
     return undefined;
   }
@@ -38,11 +53,11 @@ export function parseJsonBody<T = unknown>(event: APIGatewayProxyEventV2): T | u
   try {
     return payload ? (JSON.parse(payload) as T) : undefined;
   } catch {
-    throw ApiError.badRequest('Request body must be valid JSON');
+    throw new ApiError(CommonMessages.INVALID_JSON, locale);
   }
 }
 
-function resolveTenantId(event: APIGatewayProxyEventV2): string {
+function resolveTenantId(event: APIGatewayProxyEventV2, locale: string): string {
   const tenantHeader = env.tenant.headerName;
   const tenantId =
     getHeader(event, tenantHeader) ||
@@ -51,10 +66,14 @@ function resolveTenantId(event: APIGatewayProxyEventV2): string {
     '';
 
   if (!tenantId.trim()) {
-    throw ApiError.badRequest(`Tenant id is required. Provide header ${tenantHeader}`);
+    throw new ApiError(CommonMessages.TENANT_REQUIRED, locale, { header: tenantHeader });
   }
 
   return tenantId.trim();
+}
+
+function resolveLocale(event: APIGatewayProxyEventV2): string {
+  return getHeader(event, LOCALE_HEADER) || DEFAULT_LOCALE;
 }
 
 function getHeader(event: APIGatewayProxyEventV2, name: string): string | undefined {
@@ -89,40 +108,20 @@ function buildCorsHeaders(event: APIGatewayProxyEventV2): Record<string, string>
   return headers;
 }
 
-function formatSuccess(event: APIGatewayProxyEventV2, response: HandlerResponse): APIGatewayProxyResultV2 {
-  const { statusCode, body, headers } = response;
-  const finalHeaders = {
+function formatResult(
+  event: APIGatewayProxyEventV2,
+  response: ApiSuccessResponse<unknown> | ApiErrorResponse,
+): APIGatewayProxyResultV2 {
+  const corsHeaders = buildCorsHeaders(event);
+  const headers = {
     'Content-Type': 'application/json',
-    ...buildCorsHeaders(event),
-    ...headers,
+    ...corsHeaders,
+    ...response.headers,
   };
 
   return {
-    statusCode,
-    headers: finalHeaders,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  };
-}
-
-function formatError(event: APIGatewayProxyEventV2, error: unknown): APIGatewayProxyResultV2 {
-  const apiError = error instanceof ApiError ? error : ApiError.internal();
-
-  if (!(error instanceof ApiError)) {
-    logger.error('Unexpected error while handling request', { error });
-  }
-
-  const payload = {
-    success: false,
-    message: apiError.message,
-    details: apiError.details,
-  };
-
-  return {
-    statusCode: apiError.statusCode || 500,
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildCorsHeaders(event),
-    },
-    body: JSON.stringify(payload),
+    statusCode: response.statusCode,
+    headers,
+    body: JSON.stringify(response.body),
   };
 }

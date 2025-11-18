@@ -1,10 +1,11 @@
-import ApiError from '../src/utils/api-error';
+import ApiError from '../src/core/api-error';
 import { GenreService } from '../src/modules/genres/genre.service';
 import { GenreRepository } from '../src/modules/genres/genre.repository';
 import { GenreEntity } from '../src/modules/genres/genre.types';
 
 describe('GenreService', () => {
   const tenantId = 'tenant-1';
+  const locale = 'en-US';
   let repository: jest.Mocked<GenreRepository>;
   let service: GenreService;
 
@@ -46,7 +47,7 @@ describe('GenreService', () => {
         lastEvaluatedKey: nextCursorObject,
       });
 
-      const result = await service.listGenres({ tenantId, limit: 5, cursor: encodedCursor });
+      const result = await service.listGenres({ tenantId, limit: 5, cursor: encodedCursor }, locale);
 
       expect(repository.listGenres).toHaveBeenCalledWith({
         tenantId,
@@ -57,8 +58,8 @@ describe('GenreService', () => {
     });
 
     it('throws ApiError.badRequest when cursor token is invalid', async () => {
-      await expect(service.listGenres({ tenantId, cursor: '***' })).rejects.toBeInstanceOf(ApiError);
-      await expect(service.listGenres({ tenantId, cursor: '***' })).rejects.toMatchObject({
+      await expect(service.listGenres({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(ApiError);
+      await expect(service.listGenres({ tenantId, cursor: '***' }, locale)).rejects.toMatchObject({
         statusCode: 400,
       });
     });
@@ -76,7 +77,7 @@ describe('GenreService', () => {
       };
       repository.findById.mockResolvedValue(genre);
 
-      const result = await service.getGenre(tenantId, 'drama');
+      const result = await service.getGenre(tenantId, 'drama', locale);
 
       expect(repository.findById).toHaveBeenCalledWith(tenantId, 'drama');
       expect(result).toBe(genre);
@@ -85,7 +86,7 @@ describe('GenreService', () => {
     it('throws 404 when genre not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.getGenre(tenantId, 'missing')).rejects.toMatchObject({
+      await expect(service.getGenre(tenantId, 'missing', locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });
@@ -102,7 +103,7 @@ describe('GenreService', () => {
       };
       repository.createGenre.mockResolvedValue(created);
 
-      const result = await service.createGenre(tenantId, payload);
+      const result = await service.createGenre(tenantId, payload, locale);
 
       expect(repository.createGenre).toHaveBeenCalledWith(tenantId, payload);
       expect(result).toBe(created);
@@ -111,7 +112,7 @@ describe('GenreService', () => {
     it('throws conflict when id already exists', async () => {
       repository.createGenre.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.createGenre(tenantId, { id: 'drama', displayOrder: 1, texts: { en: 'Drama' } })).rejects.toMatchObject({
+      await expect(service.createGenre(tenantId, { id: 'drama', displayOrder: 1, texts: { en: 'Drama' } }, locale)).rejects.toMatchObject({
         statusCode: 409,
       });
     });
@@ -129,7 +130,7 @@ describe('GenreService', () => {
       };
       repository.updateGenre.mockResolvedValue(updated);
 
-      const result = await service.updateGenre(tenantId, 'drama', { displayOrder: 2 });
+      const result = await service.updateGenre(tenantId, 'drama', { displayOrder: 2 }, locale);
 
       expect(repository.updateGenre).toHaveBeenCalledWith(tenantId, 'drama', { displayOrder: 2 });
       expect(result).toBe(updated);
@@ -138,7 +139,7 @@ describe('GenreService', () => {
     it('throws not found when update fails due to missing entity', async () => {
       repository.updateGenre.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.updateGenre(tenantId, 'missing', {})).rejects.toMatchObject({
+      await expect(service.updateGenre(tenantId, 'missing', {}, locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });
@@ -148,7 +149,7 @@ describe('GenreService', () => {
     it('removes entity when exists', async () => {
       repository.deleteGenre.mockResolvedValue();
 
-      await service.deleteGenre(tenantId, 'drama');
+      await service.deleteGenre(tenantId, 'drama', locale);
 
       expect(repository.deleteGenre).toHaveBeenCalledWith(tenantId, 'drama');
     });
@@ -156,7 +157,7 @@ describe('GenreService', () => {
     it('throws not found when delete fails', async () => {
       repository.deleteGenre.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.deleteGenre(tenantId, 'missing')).rejects.toMatchObject({
+      await expect(service.deleteGenre(tenantId, 'missing', locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });

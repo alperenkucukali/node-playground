@@ -77,19 +77,22 @@ const artistListQuerySchema = Joi.object({
     }),
 }).unknown(true);
 
-export function validateArtistId(id: unknown): string {
-  const result = validateSchema(artistIdParamSchema, { id }, { allowUnknown: true });
+export function validateArtistId(id: unknown, locale: string): string {
+  const result = validateSchema(artistIdParamSchema, { id }, { allowUnknown: true }, locale);
   return result.id;
 }
 
-export function validateCreateArtistPayload(payload: unknown): ArtistCreateInput {
-  return validateSchema(createArtistSchema, payload);
+export function validateCreateArtistPayload(payload: unknown, locale: string): ArtistCreateInput {
+  return validateSchema(createArtistSchema, payload, undefined, locale);
 }
 
-export function validateUpdateArtistPayload(payload: unknown): ArtistUpdateInput {
-  return validateSchema(updateArtistSchema, payload, { allowUnknown: true });
+export function validateUpdateArtistPayload(payload: unknown, locale: string): ArtistUpdateInput {
+  return validateSchema(updateArtistSchema, payload, { allowUnknown: true }, locale);
 }
 
-export function validateArtistListQuery(query: unknown): { limit?: number; cursor?: string; isActive?: boolean } {
-  return validateSchema(artistListQuerySchema, query, { allowUnknown: true });
+export function validateArtistListQuery(
+  query: unknown,
+  locale: string,
+): { limit?: number; cursor?: string; isActive?: boolean } {
+  return validateSchema(artistListQuerySchema, query, { allowUnknown: true }, locale);
 }

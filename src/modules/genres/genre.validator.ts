@@ -91,19 +91,19 @@ const genreIdParamSchema = Joi.object({
   id: idSchema.required(),
 }).unknown(true);
 
-export function validateCreateGenrePayload(payload: unknown): GenreCreateInput {
-  return validateSchema(createGenreSchema, payload);
+export function validateCreateGenrePayload(payload: unknown, locale: string): GenreCreateInput {
+  return validateSchema(createGenreSchema, payload, undefined, locale);
 }
 
-export function validateUpdateGenrePayload(payload: unknown): GenreUpdateInput {
-  return validateSchema(updateGenreSchema, payload, { allowUnknown: true });
+export function validateUpdateGenrePayload(payload: unknown, locale: string): GenreUpdateInput {
+  return validateSchema(updateGenreSchema, payload, { allowUnknown: true }, locale);
 }
 
-export function validateGenreId(id: unknown): string {
-  const result = validateSchema(genreIdParamSchema, { id }, { allowUnknown: true });
+export function validateGenreId(id: unknown, locale: string): string {
+  const result = validateSchema(genreIdParamSchema, { id }, { allowUnknown: true }, locale);
   return result.id;
 }
 
-export function validateGenreListQuery(query: unknown): { limit?: number; cursor?: string } {
-  return validateSchema(listQuerySchema, query, { allowUnknown: true });
+export function validateGenreListQuery(query: unknown, locale: string): { limit?: number; cursor?: string } {
+  return validateSchema(listQuerySchema, query, { allowUnknown: true }, locale);
 }

@@ -1,12 +1,13 @@
+import { ok } from '../../../core/success';
 import { createHandler, parseJsonBody } from '../../../handlers/http';
-import { created } from '../../../handlers/response';
 import artistService from '../artist.service';
+import { ArtistMessages } from '../artist.messages';
 import { validateCreateArtistPayload } from '../artist.validator';
 
-export const createArtist = createHandler(async ({ event, tenantId }) => {
-  const body = parseJsonBody(event);
-  const payload = validateCreateArtistPayload(body);
-  const artist = await artistService.createArtist(tenantId, payload);
+export const createArtist = createHandler(async ({ event, tenantId, locale, requestId }) => {
+  const body = parseJsonBody(event, locale);
+  const payload = validateCreateArtistPayload(body, locale);
+  const artist = await artistService.createArtist(tenantId, payload, locale);
 
-  return created(artist);
+  return ok(ArtistMessages.CREATED, locale, artist, requestId);
 });

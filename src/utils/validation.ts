@@ -1,5 +1,6 @@
 import Joi, { Schema, ValidationOptions } from 'joi';
-import ApiError from './api-error';
+import ApiError from '../core/api-error';
+import { CommonMessages } from '../modules/common/messages';
 
 const DEFAULT_OPTIONS: ValidationOptions = {
   abortEarly: false,
@@ -7,14 +8,19 @@ const DEFAULT_OPTIONS: ValidationOptions = {
   convert: true,
 };
 
-export function validateSchema<T>(schema: Schema<T>, payload: unknown, options?: ValidationOptions): T {
+export function validateSchema<T>(
+  schema: Schema<T>,
+  payload: unknown,
+  options?: ValidationOptions,
+  locale = 'en-US',
+): T {
   const { value, error } = schema.validate(payload, { ...DEFAULT_OPTIONS, ...options });
 
   if (error) {
     const detail = error.details[0];
     const message =
       (detail?.context as { message?: string } | undefined)?.message || detail?.message || 'Validation failed';
-    throw ApiError.badRequest(message);
+    throw new ApiError(CommonMessages.INVALID_INPUT, locale, { message });
   }
 
   return value as T;

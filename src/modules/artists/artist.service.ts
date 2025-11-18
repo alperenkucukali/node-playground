@@ -1,5 +1,7 @@
-import ApiError from '../../utils/api-error';
+import ApiError from '../../core/api-error';
 import CursorCodec from '../../utils/cursor-codec';
+import { CommonMessages } from '../common/messages';
+import { ArtistMessages } from './artist.messages';
 import artistRepository, { ArtistRepository } from './artist.repository';
 import {
   ArtistCreateInput,
@@ -14,8 +16,8 @@ export class ArtistService {
 
   constructor(private readonly repository: ArtistRepository) {}
 
-  async listArtists(params: ArtistListQuery): Promise<ArtistListResponse> {
-    const decodedCursor = this.cursorCodec.decode(params.cursor);
+  async listArtists(params: ArtistListQuery, locale: string): Promise<ArtistListResponse> {
+    const decodedCursor = this.cursorCodec.decode(params.cursor, () => new ApiError(CommonMessages.INVALID_CURSOR, locale));
     const result = await this.repository.listArtists({
       tenantId: params.tenantId,
       limit: params.limit,
@@ -29,42 +31,42 @@ export class ArtistService {
     };
   }
 
-  async getArtist(tenantId: string, id: string): Promise<ArtistEntity> {
+  async getArtist(tenantId: string, id: string, locale: string): Promise<ArtistEntity> {
     const artist = await this.repository.findById(tenantId, id);
     if (!artist) {
-      throw ApiError.notFound(`Artist ${id} not found`);
+      throw new ApiError(ArtistMessages.NOT_FOUND, locale, { id });
     }
     return artist;
   }
 
-  async createArtist(tenantId: string, payload: ArtistCreateInput): Promise<ArtistEntity> {
+  async createArtist(tenantId: string, payload: ArtistCreateInput, locale: string): Promise<ArtistEntity> {
     try {
       return await this.repository.createArtist(tenantId, payload);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.conflict(`Artist ${payload.id} already exists`);
+        throw new ApiError(ArtistMessages.ALREADY_EXISTS, locale, { id: payload.id });
       }
       throw error;
     }
   }
 
-  async updateArtist(tenantId: string, id: string, payload: ArtistUpdateInput): Promise<ArtistEntity> {
+  async updateArtist(tenantId: string, id: string, payload: ArtistUpdateInput, locale: string): Promise<ArtistEntity> {
     try {
       return await this.repository.updateArtist(tenantId, id, payload);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.notFound(`Artist ${id} not found`);
+        throw new ApiError(ArtistMessages.NOT_FOUND, locale, { id });
       }
       throw error;
     }
   }
 
-  async deleteArtist(tenantId: string, id: string): Promise<void> {
+  async deleteArtist(tenantId: string, id: string, locale: string): Promise<void> {
     try {
       await this.repository.deleteArtist(tenantId, id);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.notFound(`Artist ${id} not found`);
+        throw new ApiError(ArtistMessages.NOT_FOUND, locale, { id });
       }
       throw error;
     }

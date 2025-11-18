@@ -1,5 +1,7 @@
-import ApiError from '../../utils/api-error';
+import ApiError from '../../core/api-error';
 import CursorCodec from '../../utils/cursor-codec';
+import { CommonMessages } from '../common/messages';
+import { GenreMessages } from './genre.messages';
 import genreRepository, { GenreRepository } from './genre.repository';
 import {
   GenreCreateInput,
@@ -14,8 +16,8 @@ export class GenreService {
 
   constructor(private readonly repository: GenreRepository) {}
 
-  async listGenres(params: GenreListQuery): Promise<GenreListResponse> {
-    const decodedCursor = this.cursorCodec.decode(params.cursor);
+  async listGenres(params: GenreListQuery, locale: string): Promise<GenreListResponse> {
+    const decodedCursor = this.cursorCodec.decode(params.cursor, () => new ApiError(CommonMessages.INVALID_CURSOR, locale));
     const result = await this.repository.listGenres({
       tenantId: params.tenantId,
       limit: params.limit,
@@ -28,42 +30,42 @@ export class GenreService {
     };
   }
 
-  async getGenre(tenantId: string, id: string): Promise<GenreEntity> {
+  async getGenre(tenantId: string, id: string, locale: string): Promise<GenreEntity> {
     const genre = await this.repository.findById(tenantId, id);
     if (!genre) {
-      throw ApiError.notFound(`Genre ${id} not found`);
+      throw new ApiError(GenreMessages.NOT_FOUND, locale, { id });
     }
     return genre;
   }
 
-  async createGenre(tenantId: string, payload: GenreCreateInput): Promise<GenreEntity> {
+  async createGenre(tenantId: string, payload: GenreCreateInput, locale: string): Promise<GenreEntity> {
     try {
       return await this.repository.createGenre(tenantId, payload);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.conflict(`Genre ${payload.id} already exists`);
+        throw new ApiError(GenreMessages.ALREADY_EXISTS, locale, { id: payload.id });
       }
       throw error;
     }
   }
 
-  async updateGenre(tenantId: string, id: string, payload: GenreUpdateInput): Promise<GenreEntity> {
+  async updateGenre(tenantId: string, id: string, payload: GenreUpdateInput, locale: string): Promise<GenreEntity> {
     try {
       return await this.repository.updateGenre(tenantId, id, payload);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.notFound(`Genre ${id} not found`);
+        throw new ApiError(GenreMessages.NOT_FOUND, locale, { id });
       }
       throw error;
     }
   }
 
-  async deleteGenre(tenantId: string, id: string): Promise<void> {
+  async deleteGenre(tenantId: string, id: string, locale: string): Promise<void> {
     try {
       await this.repository.deleteGenre(tenantId, id);
     } catch (error: any) {
       if (error?.name === 'ConditionalCheckFailedException') {
-        throw ApiError.notFound(`Genre ${id} not found`);
+        throw new ApiError(GenreMessages.NOT_FOUND, locale, { id });
       }
       throw error;
     }

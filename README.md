@@ -37,7 +37,7 @@ TENANT_HEADER_NAME=x-tenant-id
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
-`src/handlers/http.ts` centralizes tenant resolution plus JSON/CORS handling, while `src/handlers/response.ts` provides reusable helpers (`ok`, `created`, `listOk`, `noContent`) for consistent payload shapes across handlers. Shared utilities under `src/modules/common/**` (e.g., id schema builder and Dynamo update-expression helper) keep cross-cutting logic easy to reuse.
+`src/handlers/http.ts` centralizes tenant/locale resolution plus JSON + CORS plumbing, while the core layer (`src/core/messages.ts`, `src/core/success.ts`, `src/core/api-error.ts`, `src/core/with-error-handling.ts`, `src/core/translator.ts`) standardizes localized success/error envelopes. Shared utilities under `src/modules/common/**` (e.g., id schema builder, Dynamo update-expression helper, reusable message definitions) keep cross-cutting logic easy to reuse across handlers.
 
 ## Local DynamoDB
 
@@ -82,3 +82,4 @@ npm run seed:all:prod
 - Configuration still comes from `src/config/env.ts`.
 - Validation stays in `src/modules/**/ *.validator.ts` and now returns plain objects rather than mutating Express requests.
 - Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
+- Localized strings live in `src/core/translator.ts`. Extend those dictionaries (e.g., add `en-US`, `tr-TR` entries) when you add new message definitions so responses remain user-friendly.

@@ -1,10 +1,11 @@
-import ApiError from '../src/utils/api-error';
+import ApiError from '../src/core/api-error';
 import { ArtistService } from '../src/modules/artists/artist.service';
 import { ArtistRepository } from '../src/modules/artists/artist.repository';
 import { ArtistEntity } from '../src/modules/artists/artist.types';
 
 describe('ArtistService', () => {
   const tenantId = 'tenant-1';
+  const locale = 'en-US';
   let repository: jest.Mocked<ArtistRepository>;
   let service: ArtistService;
 
@@ -47,7 +48,7 @@ describe('ArtistService', () => {
         lastEvaluatedKey: nextCursorObject,
       });
 
-      const result = await service.listArtists({ tenantId, limit: 5, cursor: encodedCursor, isActive: true });
+      const result = await service.listArtists({ tenantId, limit: 5, cursor: encodedCursor, isActive: true }, locale);
 
       expect(repository.listArtists).toHaveBeenCalledWith({
         tenantId,
@@ -59,8 +60,8 @@ describe('ArtistService', () => {
     });
 
     it('throws ApiError.badRequest when cursor token is invalid', async () => {
-      await expect(service.listArtists({ tenantId, cursor: '***' })).rejects.toBeInstanceOf(ApiError);
-      await expect(service.listArtists({ tenantId, cursor: '***' })).rejects.toMatchObject({
+      await expect(service.listArtists({ tenantId, cursor: '***' }, locale)).rejects.toBeInstanceOf(ApiError);
+      await expect(service.listArtists({ tenantId, cursor: '***' }, locale)).rejects.toMatchObject({
         statusCode: 400,
       });
     });
@@ -79,7 +80,7 @@ describe('ArtistService', () => {
       };
       repository.findById.mockResolvedValue(artist);
 
-      const result = await service.getArtist(tenantId, 'artist-1');
+      const result = await service.getArtist(tenantId, 'artist-1', locale);
 
       expect(repository.findById).toHaveBeenCalledWith(tenantId, 'artist-1');
       expect(result).toBe(artist);
@@ -88,7 +89,7 @@ describe('ArtistService', () => {
     it('throws 404 when artist not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      await expect(service.getArtist(tenantId, 'missing')).rejects.toMatchObject({
+      await expect(service.getArtist(tenantId, 'missing', locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });
@@ -105,7 +106,7 @@ describe('ArtistService', () => {
       };
       repository.createArtist.mockResolvedValue(created);
 
-      const result = await service.createArtist(tenantId, payload);
+      const result = await service.createArtist(tenantId, payload, locale);
 
       expect(repository.createArtist).toHaveBeenCalledWith(tenantId, payload);
       expect(result).toBe(created);
@@ -115,7 +116,7 @@ describe('ArtistService', () => {
       repository.createArtist.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
       await expect(
-        service.createArtist(tenantId, { id: 'artist-1', firstName: 'Al', lastName: 'Pacino', isActive: true }),
+        service.createArtist(tenantId, { id: 'artist-1', firstName: 'Al', lastName: 'Pacino', isActive: true }, locale),
       ).rejects.toMatchObject({
         statusCode: 409,
       });
@@ -135,7 +136,7 @@ describe('ArtistService', () => {
       };
       repository.updateArtist.mockResolvedValue(updated);
 
-      const result = await service.updateArtist(tenantId, 'artist-1', { firstName: 'New' });
+      const result = await service.updateArtist(tenantId, 'artist-1', { firstName: 'New' }, locale);
 
       expect(repository.updateArtist).toHaveBeenCalledWith(tenantId, 'artist-1', { firstName: 'New' });
       expect(result).toBe(updated);
@@ -144,7 +145,7 @@ describe('ArtistService', () => {
     it('throws not found when update fails due to missing entity', async () => {
       repository.updateArtist.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.updateArtist(tenantId, 'missing', {})).rejects.toMatchObject({
+      await expect(service.updateArtist(tenantId, 'missing', {}, locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });
@@ -154,7 +155,7 @@ describe('ArtistService', () => {
     it('removes entity when exists', async () => {
       repository.deleteArtist.mockResolvedValue();
 
-      await service.deleteArtist(tenantId, 'artist-1');
+      await service.deleteArtist(tenantId, 'artist-1', locale);
 
       expect(repository.deleteArtist).toHaveBeenCalledWith(tenantId, 'artist-1');
     });
@@ -162,7 +163,7 @@ describe('ArtistService', () => {
     it('throws not found when delete fails', async () => {
       repository.deleteArtist.mockRejectedValue({ name: 'ConditionalCheckFailedException' });
 
-      await expect(service.deleteArtist(tenantId, 'missing')).rejects.toMatchObject({
+      await expect(service.deleteArtist(tenantId, 'missing', locale)).rejects.toMatchObject({
         statusCode: 404,
       });
     });
