@@ -1,5 +1,6 @@
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
-import { env } from '../config/env';
+import { env, LOG_LEVELS } from '../config/env';
+import type { LogLevel } from '../config/env';
 import logger from '../config/logger';
 import ApiError from '../core/api-error';
 import { ApiErrorResponse, ApiSuccessResponse } from '../core/types';
@@ -39,6 +40,7 @@ export function createHandler(logic: HandlerLogic) {
 
   return async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
     const result = await wrapped(event);
+    logRequest(event, result);
     return formatResult(event, result);
   };
 }
@@ -124,4 +126,52 @@ function formatResult(
     headers,
     body: JSON.stringify(response.body),
   };
+}
+
+function logRequest(
+  event: APIGatewayProxyEventV2,
+  response: ApiSuccessResponse<unknown> | ApiErrorResponse,
+): void {
+  const body = response.body as { success?: boolean; code?: number; classId?: string } | undefined;
+  const context = {
+    method: event.requestContext?.http?.method,
+    path: event.rawPath,
+    requestId: event.requestContext?.requestId,
+    tenantId: getHeader(event, env.tenant.headerName) || env.tenant.defaultId || 'unknown',
+    locale: getHeader(event, LOCALE_HEADER) || DEFAULT_LOCALE,
+    statusCode: response.statusCode,
+    code: body?.code,
+    classId: body?.classId,
+  };
+
+  const level = determineLogLevel(response.statusCode, body?.success);
+  if (!shouldLog(level)) {
+    return;
+  }
+
+  if (level === 'error') {
+    logger.error('Request completed with server error', context);
+  } else if (level === 'warn') {
+    logger.warn('Request completed with client error', context);
+  } else {
+    logger.info('Request completed', context);
+  }
+}
+
+function determineLogLevel(statusCode: number, success?: boolean): LogLevel {
+  if (statusCode >= 500) {
+    return 'error';
+  }
+  if (statusCode >= 400 || success === false) {
+    return 'warn';
+  }
+  return 'info';
+}
+
+function shouldLog(level: LogLevel): boolean {
+  const configuredValue = typeof env.logLevel === 'string' ? env.logLevel.toLowerCase() : 'info';
+  const configured = LOG_LEVELS.includes(configuredValue as LogLevel)
+    ? (configuredValue as LogLevel)
+    : ('info' as LogLevel);
+  return LOG_LEVELS.indexOf(level) <= LOG_LEVELS.indexOf(configured);
 }

@@ -2,7 +2,24 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const FALLBACKS = {
+export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+export const LOG_LEVELS: LogLevel[] = ['error', 'warn', 'info', 'debug'];
+
+const FALLBACKS: {
+  NODE_ENV: string;
+  PORT: string;
+  APP_NAME: string;
+  API_ROOT: string;
+  CORS_ORIGINS: string;
+  LOG_LEVEL: LogLevel;
+  AWS_REGION: string;
+  AWS_DYNAMODB_ENDPOINT: string;
+  CATALOG_TABLE_NAME: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
+  DEFAULT_TENANT_ID: string;
+  TENANT_HEADER_NAME: string;
+} = {
   NODE_ENV: 'development',
   PORT: '3000',
   APP_NAME: 'node-playground',
@@ -17,6 +34,21 @@ const FALLBACKS = {
   DEFAULT_TENANT_ID: 'demo-tenant',
   TENANT_HEADER_NAME: 'x-tenant-id',
 } as const;
+
+const ENV_PROFILES: Record<string, Partial<typeof FALLBACKS>> = {
+  development: {
+    LOG_LEVEL: 'debug',
+  },
+  local: {
+    LOG_LEVEL: 'debug',
+  },
+  test: {
+    LOG_LEVEL: 'error',
+  },
+  production: {
+    LOG_LEVEL: 'info',
+  },
+};
 
 function toArray(value?: string | string[]): string[] {
   if (!value) {
@@ -60,27 +92,31 @@ export interface EnvConfig {
   isDevelopment: boolean;
 }
 
+const rawProfile = (process.env.APP_ENV || process.env.NODE_ENV || FALLBACKS.NODE_ENV).toLowerCase();
+const profileFallbacks = { ...FALLBACKS, ...(ENV_PROFILES[rawProfile] || {}) };
+const normalizedProfile = ENV_PROFILES[rawProfile] ? rawProfile : FALLBACKS.NODE_ENV;
+
 export const env: EnvConfig = {
-  nodeEnv: process.env.NODE_ENV || FALLBACKS.NODE_ENV,
-  port: Number(process.env.PORT || FALLBACKS.PORT),
-  appName: process.env.APP_NAME || FALLBACKS.APP_NAME,
-  apiRoot: process.env.API_ROOT || FALLBACKS.API_ROOT,
-  corsOrigins: toArray(process.env.CORS_ORIGINS || FALLBACKS.CORS_ORIGINS),
-  logLevel: process.env.LOG_LEVEL || FALLBACKS.LOG_LEVEL,
+  nodeEnv: normalizedProfile,
+  port: Number(process.env.PORT || profileFallbacks.PORT),
+  appName: process.env.APP_NAME || profileFallbacks.APP_NAME,
+  apiRoot: process.env.API_ROOT || profileFallbacks.API_ROOT,
+  corsOrigins: toArray(process.env.CORS_ORIGINS || profileFallbacks.CORS_ORIGINS),
+  logLevel: process.env.LOG_LEVEL || profileFallbacks.LOG_LEVEL,
   aws: {
-    region: process.env.AWS_REGION || FALLBACKS.AWS_REGION,
-    dynamoEndpoint: process.env.AWS_DYNAMODB_ENDPOINT || FALLBACKS.AWS_DYNAMODB_ENDPOINT,
+    region: process.env.AWS_REGION || profileFallbacks.AWS_REGION,
+    dynamoEndpoint: process.env.AWS_DYNAMODB_ENDPOINT || profileFallbacks.AWS_DYNAMODB_ENDPOINT,
     tables: {
-      catalog: process.env.CATALOG_TABLE_NAME || FALLBACKS.CATALOG_TABLE_NAME,
+      catalog: process.env.CATALOG_TABLE_NAME || profileFallbacks.CATALOG_TABLE_NAME,
     },
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || FALLBACKS.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || FALLBACKS.AWS_SECRET_ACCESS_KEY,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || profileFallbacks.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || profileFallbacks.AWS_SECRET_ACCESS_KEY,
     },
   },
   tenant: {
-    defaultId: process.env.DEFAULT_TENANT_ID || FALLBACKS.DEFAULT_TENANT_ID,
-    headerName: process.env.TENANT_HEADER_NAME || FALLBACKS.TENANT_HEADER_NAME,
+    defaultId: process.env.DEFAULT_TENANT_ID || profileFallbacks.DEFAULT_TENANT_ID,
+    headerName: process.env.TENANT_HEADER_NAME || profileFallbacks.TENANT_HEADER_NAME,
   },
   isProduction: false,
   isTest: false,

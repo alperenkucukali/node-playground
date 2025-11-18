@@ -13,7 +13,7 @@ This project now exposes AWS Lambda handlers (one per CRUD operation) for managi
 npm install
 ```
 
-Environment variables live in `.env` (all have sensible fallbacks):
+Environment variables live in `.env` (all have sensible fallbacks). You can control the configuration profile via `APP_ENV` or `NODE_ENV` (`development`, `local`, `test`, `production`) to switch defaults like `LOG_LEVEL`:
 
 ```dotenv
 APP_NAME=node-playground
@@ -37,7 +37,7 @@ TENANT_HEADER_NAME=x-tenant-id
 
 Each API operation maps to a dedicated handler file beneath `src/modules/<domain>/handlers/`. For example, `src/modules/genres/handlers/list-genres.handler.ts` exports `listGenres`, while `src/modules/artists/handlers/create-artist.handler.ts` exports `createArtist`. The root export `src/handlers/index.ts` simply re-exports every handler to make bundling convenient.
 
-`src/handlers/http.ts` centralizes tenant/locale resolution plus JSON + CORS plumbing, while the core layer (`src/core/messages.ts`, `src/core/success.ts`, `src/core/api-error.ts`, `src/core/with-error-handling.ts`, `src/core/translator.ts`) standardizes localized success/error envelopes. Shared utilities under `src/modules/common/**` (e.g., id schema builder, Dynamo update-expression helper, reusable message definitions) keep cross-cutting logic easy to reuse across handlers.
+`src/config/env.ts` loads environment-specific defaults (set `APP_ENV`/`NODE_ENV` to `development`, `local`, `test`, or `production`) so values like `LOG_LEVEL` adjust automatically. `src/handlers/http.ts` centralizes tenant/locale resolution plus JSON + CORS plumbing, while the core layer (`src/core/messages.ts`, `src/core/success.ts`, `src/core/api-error.ts`, `src/core/with-error-handling.ts`, `src/core/translator.ts`) standardizes localized success/error envelopes. Shared utilities under `src/modules/common/**` (e.g., id schema builder, Dynamo update-expression helper, reusable message definitions) keep cross-cutting logic easy to reuse across handlers.
 
 ## Local DynamoDB
 
