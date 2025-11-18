@@ -82,4 +82,4 @@ npm run seed:all:prod
 - Configuration still comes from `src/config/env.ts`.
 - Validation stays in `src/modules/**/ *.validator.ts` and now returns plain objects rather than mutating Express requests.
 - Handlers rely on `ApiError` for consistent HTTP responses; anything else is logged and returned as a 500.
-- Localized strings live in `src/core/translator.ts`. Extend those dictionaries (e.g., add `en-US`, `tr-TR` entries) when you add new message definitions so responses remain user-friendly.
+- Localized strings live under `src/i18n/*.json` and are loaded via `src/core/translator.ts`. Extend those JSON resources (e.g., add `en`/`tr` entries) when you add new message definitions so responses remain user-friendly.

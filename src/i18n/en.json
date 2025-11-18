@@ -1,0 +1,34 @@
+{
+  "Successes": {
+    "Genre": {
+      "LIST_SUCCESS": "Genres retrieved successfully.",
+      "GET_SUCCESS": "Genre retrieved successfully.",
+      "CREATED": "Genre created successfully.",
+      "UPDATED": "Genre updated successfully.",
+      "DELETED": "Genre deleted successfully."
+    },
+    "Artist": {
+      "LIST_SUCCESS": "Artists retrieved successfully.",
+      "GET_SUCCESS": "Artist retrieved successfully.",
+      "CREATED": "Artist created successfully.",
+      "UPDATED": "Artist updated successfully.",
+      "DELETED": "Artist deleted successfully."
+    }
+  },
+  "Errors": {
+    "Genre": {
+      "NOT_FOUND": "Requested genre could not be found.",
+      "ALREADY_EXISTS": "A genre with the same id already exists."
+    },
+    "Artist": {
+      "NOT_FOUND": "Requested artist could not be found.",
+      "ALREADY_EXISTS": "An artist with the same id already exists."
+    },
+    "Common": {
+      "INVALID_CURSOR": "Cursor token is invalid.",
+      "INVALID_JSON": "Request body must be valid JSON.",
+      "TENANT_REQUIRED": "Tenant identifier header is required.",
+      "INVALID_INPUT": "One or more fields failed validation."
+    }
+  }
+}

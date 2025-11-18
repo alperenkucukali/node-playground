@@ -1,0 +1,34 @@
+{
+  "Successes": {
+    "Genre": {
+      "LIST_SUCCESS": "Türler başarıyla getirildi.",
+      "GET_SUCCESS": "Tür başarıyla getirildi.",
+      "CREATED": "Tür başarıyla oluşturuldu.",
+      "UPDATED": "Tür başarıyla güncellendi.",
+      "DELETED": "Tür başarıyla silindi."
+    },
+    "Artist": {
+      "LIST_SUCCESS": "Sanatçılar başarıyla getirildi.",
+      "GET_SUCCESS": "Sanatçı başarıyla getirildi.",
+      "CREATED": "Sanatçı başarıyla oluşturuldu.",
+      "UPDATED": "Sanatçı başarıyla güncellendi.",
+      "DELETED": "Sanatçı başarıyla silindi."
+    }
+  },
+  "Errors": {
+    "Genre": {
+      "NOT_FOUND": "İstenen tür bulunamadı.",
+      "ALREADY_EXISTS": "Aynı kimliğe sahip bir tür zaten mevcut."
+    },
+    "Artist": {
+      "NOT_FOUND": "İstenen sanatçı bulunamadı.",
+      "ALREADY_EXISTS": "Aynı kimliğe sahip bir sanatçı zaten mevcut."
+    },
+    "Common": {
+      "INVALID_CURSOR": "Cursor değeri geçersiz.",
+      "INVALID_JSON": "İstek gövdesi geçerli JSON olmalıdır.",
+      "TENANT_REQUIRED": "Tenant kimliği başlığı gereklidir.",
+      "INVALID_INPUT": "Bir veya daha fazla alan doğrulamadan geçemedi."
+    }
+  }
+}
