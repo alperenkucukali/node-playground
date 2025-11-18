@@ -1,0 +1,9 @@
+process.env.APP_ENV = process.env.APP_ENV || 'test';
+process.env.CATALOG_TABLE_NAME = process.env.CATALOG_TABLE_NAME || 'media-catalog-integration';
+process.env.ENABLE_METRICS = 'false';
+process.env.METRICS_NAMESPACE = process.env.METRICS_NAMESPACE || 'node-playground-integration';
+process.env.LOG_LEVEL = process.env.LOG_LEVEL || 'error';
+process.env.AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || 'local';
+process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || 'local';
+process.env.AWS_DYNAMODB_ENDPOINT = process.env.AWS_DYNAMODB_ENDPOINT || 'http://localhost:8000';

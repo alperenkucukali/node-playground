@@ -17,7 +17,8 @@
     "seed:artists:prod": "node dist/scripts/seed-artists.js",
     "seed:all": "npm run seed:genres && npm run seed:artists",
     "seed:all:prod": "npm run seed:genres:prod && npm run seed:artists:prod",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:integration": "jest --config jest.integration.config.js"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.933.0",
